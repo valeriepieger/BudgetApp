@@ -28,35 +28,7 @@ struct AllTabsView: View {
             
             //DASHBOARD PAGE
             NavigationView {
-                //TODO: Replace all this with actual dashboard page
-                VStack(spacing: 16) {
-                    NavigationLink(destination: IncomeView().navigationBarBackButtonHidden(true)) {
-                        HStack {
-                            Spacer()
-                            Text("Income page")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.black)
-                        .cornerRadius(10)
-                    }
-                    
-                    NavigationLink(destination: EditCategoriesView().navigationBarBackButtonHidden(true)) {
-                        HStack {
-                            Spacer()
-                            Text("Edit Categories page")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                            Spacer()
-                        }
-                        .padding()
-                        .background(Color.black)
-                        .cornerRadius(10)
-                    }
-                }
-                .navigationTitle("Dashboard")
+                DashboardView()
             }
             .tabItem {
                 Image(systemName: "house")
@@ -66,8 +38,7 @@ struct AllTabsView: View {
             
             //EXPENSES PAGE
             NavigationView {
-                //TODO: replace with actual expenses page
-                Text("Expenses view")
+                ExpensesView()
                     .navigationTitle("Expenses")
             }
             .tabItem {
