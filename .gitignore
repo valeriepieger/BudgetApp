@@ -1,0 +1,21 @@
+# Firebase
+GoogleService-Info.plist
+
+# Xcode
+DerivedData/
+build/
+*.xcworkspace
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager
+.build/
+
+# CocoaPods
+Pods/
+
+# macOS junk
+.DS_Store
+
+# Logs
+*.log
