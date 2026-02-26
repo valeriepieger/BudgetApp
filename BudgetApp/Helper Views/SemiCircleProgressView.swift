@@ -10,7 +10,7 @@ struct SemiCircleProgressView: View {
     }
     
     var body: some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             SemiCircleShape()
                 .stroke(Color.gray.opacity(0.2), lineWidth: 22)
             
@@ -39,7 +39,7 @@ struct SemiCircleProgressView: View {
                     .font(.footnote)
                     .foregroundColor(.gray)
             }
-            .padding(.bottom, 24)
+            .padding(.bottom, 16)
         }
     }
 }

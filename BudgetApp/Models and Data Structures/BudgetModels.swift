@@ -27,3 +27,10 @@ struct CategorySummary: Identifiable, Hashable {
     }
 }
 
+struct IncomeSource: Identifiable, Codable {
+    var id: String
+    var name: String
+    var amount: Double
+    var dateAdded: Date?
+}
+
