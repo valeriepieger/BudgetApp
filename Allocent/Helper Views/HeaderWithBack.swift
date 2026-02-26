@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct HeaderWithBack: View {
-    var categoryName: String
+    var pageName: String
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -23,7 +23,7 @@ struct HeaderWithBack: View {
                     .foregroundColor(.black)
             }
             
-            Text(categoryName)
+            Text(pageName)
                 .font(.title)
                 .fontWeight(.medium)
             Spacer()
@@ -34,5 +34,5 @@ struct HeaderWithBack: View {
 }
 
 #Preview {
-    HeaderWithBack(categoryName: "Income")
+    HeaderWithBack(pageName: "Income")
 }

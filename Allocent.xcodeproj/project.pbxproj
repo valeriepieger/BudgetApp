@@ -14,18 +14,18 @@
 		1710D52F2F4FF3A0004DAAE5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D52E2F4FF3A0004DAAE5 /* FirebaseFirestore */; };
 		1710D5312F4FF3A0004DAAE5 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5302F4FF3A0004DAAE5 /* FirebaseFunctions */; };
 		1710D5332F4FF3A0004DAAE5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5322F4FF3A0004DAAE5 /* FirebaseStorage */; };
-		1710D55C2F500020004DAAE5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1710D55B2F500020004DAAE5 /* GoogleService-Info.plist */; };
+		3B0E5AF12F50B68F009C3218 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3B0E5AF02F50B68F009C3218 /* GoogleService-Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1710D55B2F500020004DAAE5 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
-		3B0E59C42F462CCF009C3218 /* BudgetApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BudgetApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B0E59C42F462CCF009C3218 /* Allocent.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Allocent.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3B0E5AF02F50B68F009C3218 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		3B0E59C62F462CCF009C3218 /* BudgetApp */ = {
+		3B0E59C62F462CCF009C3218 /* Allocent */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = BudgetApp;
+			path = Allocent;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -51,16 +51,16 @@
 		3B0E59BB2F462CCF009C3218 = {
 			isa = PBXGroup;
 			children = (
-				3B0E59C62F462CCF009C3218 /* BudgetApp */,
+				3B0E59C62F462CCF009C3218 /* Allocent */,
 				3B0E59C52F462CCF009C3218 /* Products */,
-				1710D55B2F500020004DAAE5 /* GoogleService-Info.plist */,
+				3B0E5AF02F50B68F009C3218 /* GoogleService-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
 		3B0E59C52F462CCF009C3218 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				3B0E59C42F462CCF009C3218 /* BudgetApp.app */,
+				3B0E59C42F462CCF009C3218 /* Allocent.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -68,9 +68,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		3B0E59C32F462CCF009C3218 /* BudgetApp */ = {
+		3B0E59C32F462CCF009C3218 /* Allocent */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 3B0E59CF2F462CD1009C3218 /* Build configuration list for PBXNativeTarget "BudgetApp" */;
+			buildConfigurationList = 3B0E59CF2F462CD1009C3218 /* Build configuration list for PBXNativeTarget "Allocent" */;
 			buildPhases = (
 				3B0E59C02F462CCF009C3218 /* Sources */,
 				3B0E59C12F462CCF009C3218 /* Frameworks */,
@@ -81,9 +81,9 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				3B0E59C62F462CCF009C3218 /* BudgetApp */,
+				3B0E59C62F462CCF009C3218 /* Allocent */,
 			);
-			name = BudgetApp;
+			name = Allocent;
 			packageProductDependencies = (
 				1710D5262F4FF3A0004DAAE5 /* FirebaseAuth */,
 				1710D5282F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community */,
@@ -94,7 +94,7 @@
 				1710D5322F4FF3A0004DAAE5 /* FirebaseStorage */,
 			);
 			productName = BudgetApp;
-			productReference = 3B0E59C42F462CCF009C3218 /* BudgetApp.app */;
+			productReference = 3B0E59C42F462CCF009C3218 /* Allocent.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -112,7 +112,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 3B0E59BF2F462CCF009C3218 /* Build configuration list for PBXProject "BudgetApp" */;
+			buildConfigurationList = 3B0E59BF2F462CCF009C3218 /* Build configuration list for PBXProject "Allocent" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -129,7 +129,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				3B0E59C32F462CCF009C3218 /* BudgetApp */,
+				3B0E59C32F462CCF009C3218 /* Allocent */,
 			);
 		};
 /* End PBXProject section */
@@ -139,7 +139,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1710D55C2F500020004DAAE5 /* GoogleService-Info.plist in Resources */,
+				3B0E5AF12F50B68F009C3218 /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -344,7 +344,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		3B0E59BF2F462CCF009C3218 /* Build configuration list for PBXProject "BudgetApp" */ = {
+		3B0E59BF2F462CCF009C3218 /* Build configuration list for PBXProject "Allocent" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B0E59CD2F462CD1009C3218 /* Debug */,
@@ -353,7 +353,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		3B0E59CF2F462CD1009C3218 /* Build configuration list for PBXNativeTarget "BudgetApp" */ = {
+		3B0E59CF2F462CD1009C3218 /* Build configuration list for PBXNativeTarget "Allocent" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3B0E59D02F462CD1009C3218 /* Debug */,

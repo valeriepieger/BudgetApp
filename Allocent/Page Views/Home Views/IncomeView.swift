@@ -16,7 +16,8 @@ struct IncomeView: View {
         ZStack {
             Color("Background").ignoresSafeArea()
             ScrollView {
-                HeaderWithBack(categoryName: "Income")
+                
+                HeaderWithBack(pageName: "Income")
                 
                 VStack(alignment: .leading, spacing: 20) {
                     VStack(alignment: .leading, spacing: 8) {

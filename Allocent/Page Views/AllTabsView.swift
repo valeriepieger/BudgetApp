@@ -70,7 +70,6 @@ struct AllTabsView: View {
             }
             .tag(3)
         }
-        // This applies your custom green color to the currently selected tab
         .tint(Color("OliveGreen")) 
     }
 }

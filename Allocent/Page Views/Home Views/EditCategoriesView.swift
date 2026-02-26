@@ -16,7 +16,7 @@ struct EditCategoriesView: View {
         ZStack {
             Color("Background").ignoresSafeArea()
             VStack {
-                HeaderWithBack(categoryName: "Edit Categories")
+                HeaderWithBack(pageName: "Edit Categories")
                 
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 8) {
