@@ -26,12 +26,12 @@ struct EditProfile: View {
                     VStack {
                         ZStack(alignment: .bottomTrailing) {
                             Circle()
-                                .fill(Color(.oliveGreen.opacity(Double(0.3))))
+                                .fill(Color("OliveGreen").opacity(Double(0.3)))
                                 .frame(width: 112, height: 112)
                                 .overlay(
                                     Image(systemName: "person")
                                         .font(.system(size: 36))
-                                        .foregroundColor(.oliveGreen.opacity(Double(10.0)))
+                                        .foregroundColor(Color("OliveGreen").opacity(Double(10.0)))
                                 )
                             
                             //Camera Button
@@ -42,7 +42,7 @@ struct EditProfile: View {
                                     .font(.system(size: 14))
                                     .foregroundColor(.white)
                                     .frame(width: 40, height: 40)
-                                    .background(Color(.oliveGreen))
+                                    .background(Color("OliveGreen"))
                                     .clipShape(Circle())
                                     .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
                             }
@@ -53,7 +53,7 @@ struct EditProfile: View {
                             //TODO: action to change photo
                         }
                         .font(.subheadline)
-                        .foregroundColor(Color(.oliveGreen))
+                        .foregroundColor(Color("OliveGreen"))
                         .padding(.top, 8)
                     }
                     .frame(maxWidth: .infinity)
@@ -85,7 +85,7 @@ struct EditProfile: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
-                                .background(Color(.oliveGreen))
+                                .background(Color("OliveGreen"))
                                 .cornerRadius(16)
                         }
                     }

@@ -25,7 +25,7 @@ struct AddConnection: View {
                     VStack(alignment: .leading, spacing: 16) {
                         
                         ForEach(availableAccounts) { account in
-                            AvailableAccountCard(account: account, themeGreen: .oliveGreen)
+                            AvailableAccountCard(account: account, themeGreen: Color("OliveGreen"))
                         }
                         
                         HStack(alignment: .top, spacing: 12) {

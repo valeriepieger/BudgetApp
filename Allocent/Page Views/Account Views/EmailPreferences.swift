@@ -27,7 +27,7 @@ struct EmailPreferencesView: View {
     
     var body: some View {
         ZStack {
-            Color(.background).ignoresSafeArea()
+            Color("Background").ignoresSafeArea()
             
             ScrollView {
                 VStack {
@@ -92,7 +92,7 @@ struct EmailPreferencesView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 16)
-                                .background(.oliveGreen)
+                                .background(Color("OliveGreen"))
                                 .cornerRadius(16)
                         }
                         .padding(.top, 8)

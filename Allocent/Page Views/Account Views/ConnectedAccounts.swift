@@ -61,7 +61,7 @@ struct ConnectedAccountsView: View {
                                 .font(.headline)
                             
                             ForEach(connectedAccounts) { account in
-                                ConnectedAccountCard(account: account, themeGreen: .oliveGreen)
+                                ConnectedAccountCard(account: account, themeGreen: Color("OliveGreen"))
                             }
                         }
                         
@@ -74,7 +74,7 @@ struct ConnectedAccountsView: View {
                             }) {
                                 HStack(spacing: 16) {
                                     Circle()
-                                        .fill(.oliveGreen)
+                                        .fill(Color("OliveGreen"))
                                         .frame(width: 48, height: 48)
                                         .overlay(
                                             Image(systemName: "plus")
