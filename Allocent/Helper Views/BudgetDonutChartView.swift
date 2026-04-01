@@ -37,7 +37,7 @@ struct BudgetDonutChartView: View {
         ZStack {
             if slices.isEmpty {
                 Circle()
-                    .stroke(Color.gray.opacity(0.2), lineWidth: 28)
+                    .stroke(Color("OliveGreen").opacity(0.28), lineWidth: 28)
                     .frame(width: 220, height: 220)
             } else {
                 Chart(slices, id: \.summary.id) { item in
@@ -55,12 +55,13 @@ struct BudgetDonutChartView: View {
             VStack(spacing: 4) {
                 Text("We spent")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.gray)
                 Text(formatCurrencyWhole(totalSpent))
                     .font(.system(size: 34, weight: .bold))
+                    .foregroundColor(.black)
                 Text(monthLabel)
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundColor(.gray)
             }
             .multilineTextAlignment(.center)
             .accessibilityElement(children: .combine)
