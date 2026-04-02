@@ -121,11 +121,11 @@ private struct CategorySummaryRow: View {
     let summary: CategorySummary
     
     private var remainingText: String {
-        "$\(summary.left, default: "%.2f") left"
+        "$\(summary.left, specifier: "%.2f") left"
     }
     
     private var spentText: String {
-        "$\(summary.spent, default: "%.2f") of $\(summary.limit, default: "%.2f")"
+        "$\(summary.spent, specifier: "%.2f") of $\(summary.limit, specifier: "%.2f")"
     }
     
     private var progress: Double {

@@ -56,7 +56,7 @@ struct BudgetDonutChartView: View {
                 Text("We spent")
                     .font(.subheadline)
                     .foregroundColor(.gray)
-                Text(formatCurrencyWhole(totalSpent))
+                Text(formatCurrencyTwoDecimals(totalSpent))
                     .font(.system(size: 34, weight: .bold))
                     .foregroundColor(.black)
                 Text(monthLabel)
@@ -65,16 +65,17 @@ struct BudgetDonutChartView: View {
             }
             .multilineTextAlignment(.center)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("We spent \(formatCurrencyWhole(totalSpent)) in \(monthLabel)")
+            .accessibilityLabel("We spent \(formatCurrencyTwoDecimals(totalSpent)) in \(monthLabel)")
         }
     }
 
-    private func formatCurrencyWhole(_ value: Double) -> String {
+    private func formatCurrencyTwoDecimals(_ value: Double) -> String {
         let f = NumberFormatter()
         f.numberStyle = .currency
         f.locale = Locale.current
-        f.maximumFractionDigits = 0
-        return f.string(from: NSNumber(value: value)) ?? "$0"
+        f.minimumFractionDigits = 2
+        f.maximumFractionDigits = 2
+        return f.string(from: NSNumber(value: value)) ?? "$0.00"
     }
 }
 
