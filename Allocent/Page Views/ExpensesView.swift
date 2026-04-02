@@ -82,14 +82,6 @@ struct ExpensesView: View {
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .toolbar {
-            ToolbarItemGroup(placement: .keyboard) {
-                Spacer()
-                Button("Done") {
-                    focusedField = nil
-                }
-            }
-        }
         .onAppear(perform: loadCategories)
     }
     
@@ -134,6 +126,7 @@ struct ExpensesView: View {
         
         isSaving = true
         errorMessage = nil
+        focusedField = nil
         
         Task {
             do {
@@ -147,11 +140,13 @@ struct ExpensesView: View {
                     amountText = ""
                     note = ""
                     selectedDate = Date()
+                    focusedField = nil
                     isSaving = false
                 }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
+                    focusedField = nil
                     isSaving = false
                 }
             }

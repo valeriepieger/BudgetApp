@@ -25,7 +25,7 @@ struct DashboardView: View {
                     .cornerRadius(20)
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
                     
-                    IncomeSummaryCard(totalBudget: viewModel.totalBudget)
+                    IncomeSummaryCard(totalMonthlyIncome: viewModel.totalMonthlyIncome)
                     
                     CategoriesSection(
                         summaries: viewModel.categorySummaries
@@ -44,7 +44,7 @@ struct DashboardView: View {
 }
 
 private struct IncomeSummaryCard: View {
-    var totalBudget: Double
+    var totalMonthlyIncome: Double
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -66,11 +66,11 @@ private struct IncomeSummaryCard: View {
                 .font(.subheadline)
                 .foregroundColor(.gray)
             
-            Text("$\(totalBudget, specifier: "%.2f")")
+            Text("$\(totalMonthlyIncome, specifier: "%.2f")")
                 .font(.system(size: 28, weight: .bold))
                 .foregroundColor(.black)
             
-            Text("Based on your category limits")
+            Text("From your income sources")
                 .font(.caption)
                 .foregroundColor(.gray)
         }
@@ -121,11 +121,11 @@ private struct CategorySummaryRow: View {
     let summary: CategorySummary
     
     private var remainingText: String {
-        "$\(summary.left, specifier: "%.2f") left"
+        String(format: "$%.2f left", summary.left)
     }
     
     private var spentText: String {
-        "$\(summary.spent, specifier: "%.2f") of $\(summary.limit, specifier: "%.2f")"
+        String(format: "$%.2f of $%.2f", summary.spent, summary.limit)
     }
     
     private var progress: Double {
