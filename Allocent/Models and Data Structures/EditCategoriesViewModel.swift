@@ -74,7 +74,7 @@ final class EditCategoriesViewModel: ObservableObject {
         
         incomeListener = incomeRef.addSnapshotListener { [weak self] snapshot, _ in
             guard let documents = snapshot?.documents else { return }
-            let total = documents.compactMap { $0.data()["amount"] as? Double }.reduce(0, +)
+            let total = documents.reduce(0) { $0 + Self.double(fromFirestore: $1.data()["amount"]) }
             DispatchQueue.main.async {
                 self?.totalIncome = total
             }
@@ -136,5 +136,13 @@ final class EditCategoriesViewModel: ObservableObject {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+    
+    private static func double(fromFirestore value: Any?) -> Double {
+        if let d = value as? Double { return d }
+        if let n = value as? NSNumber { return n.doubleValue }
+        if let i = value as? Int { return Double(i) }
+        if let i = value as? Int64 { return Double(i) }
+        return 0
     }
 }
