@@ -122,7 +122,10 @@ struct ExpensesView: View {
                 
                 DispatchQueue.main.async {
                     categories = fetched
-                    if selectedCategory == nil {
+                    if let current = selectedCategory,
+                       let match = fetched.first(where: { $0.id == current.id }) {
+                        selectedCategory = match
+                    } else if selectedCategory == nil {
                         selectedCategory = fetched.first
                     }
                 }
@@ -201,26 +204,47 @@ private struct CategoryPicker: View {
         return base
     }
     
+    private var selectionTitle: String {
+        guard let c = selectedCategory else { return "Select a category" }
+        return rowLabel(for: c)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Category *")
                 .font(.subheadline)
             
-            Picker("", selection: $selectedCategory) {
+            Picker(selection: $selectedCategory) {
                 Text("Select a category")
                     .tag(nil as BudgetCategory?)
                 ForEach(categories) { category in
                     Text(rowLabel(for: category))
                         .tag(Optional(category))
                 }
+            } label: {
+                HStack(alignment: .center, spacing: 12) {
+                    Text(selectionTitle)
+                        .font(.body)
+                        .foregroundStyle(selectedCategory == nil ? Color.gray : Color.primary)
+                        .lineLimit(1)
+                        .multilineTextAlignment(.leading)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .fixedSize()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.white)
+                .cornerRadius(12)
+                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
             }
             .pickerStyle(.menu)
             .tint(.primary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+            .padding(.horizontal, -12)
         }
     }
 }
