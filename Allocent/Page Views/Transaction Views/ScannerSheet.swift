@@ -54,6 +54,8 @@ struct ScannerSheet: UIViewControllerRepresentable {
             switch item {
             case .text(let recognizedText):
                 text = recognizedText.transcript
+            case .barcode(_):
+                break 
             @unknown default:
                 break
             }
