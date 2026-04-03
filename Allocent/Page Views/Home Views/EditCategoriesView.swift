@@ -57,7 +57,7 @@ struct EditCategoriesView: View {
                                 .tint(Color("OliveGreen"))
                         }
                         Text(usePercentageAllocation
-                             ? "Each category stores its percent of income; dollar limits update automatically when income changes."
+                             ? "Set each category limit as a percentage of income."
                              : "Set each category limit in dollars.")
                             .font(.caption)
                             .foregroundColor(.gray)
