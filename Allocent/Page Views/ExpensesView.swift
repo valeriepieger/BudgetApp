@@ -216,28 +216,49 @@ private struct CategoryPicker: View {
                 .font(.subheadline)
             
             HStack {
-                Picker(selection: $selectedCategory) {
-                    Text("Select a category")
-                        .tag(nil as BudgetCategory?)
+                Menu {
+                    Button {
+                        selectedCategory = nil
+                    } label: {
+                        HStack {
+                            Text("Select a category")
+                            Spacer()
+                            if selectedCategory == nil {
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                    Divider()
                     ForEach(categories) { category in
-                        Text(rowLabel(for: category))
-                            .tag(Optional(category))
+                        Button {
+                            selectedCategory = category
+                        } label: {
+                            HStack {
+                                Text(rowLabel(for: category))
+                                Spacer()
+                                if selectedCategory?.id == category.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
                     }
                 } label: {
-                    HStack(spacing: 12) {
+                    HStack(alignment: .center, spacing: 12) {
                         Text(selectionTitle)
                             .font(.body)
                             .foregroundStyle(selectedCategory == nil ? Color.gray : Color.primary)
                             .lineLimit(1)
+                            .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Image(systemName: "chevron.up.chevron.down")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .fixedSize()
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-                .pickerStyle(.menu)
-                .tint(.primary)
+                .menuActionDismissBehavior(.automatic)
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
