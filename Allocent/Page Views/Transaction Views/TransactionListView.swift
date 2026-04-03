@@ -15,7 +15,6 @@ struct TransactionListView: View {
     @State private var showAddManual = false
     @State private var showScanReceipt = false
     @State private var searchText = ""
-    @State private var service = ExpenseService()
 
     private var filteredTransactions: [Transaction] {
         guard !searchText.isEmpty else { return transactions }
@@ -26,7 +25,18 @@ struct TransactionListView: View {
     }
 
     private var groupedTransactions: [(String, [Transaction])] {
-        service.groupedByDate(filteredTransactions)
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: filteredTransactions) {
+            calendar.startOfDay(for: $0.date)
+        }
+        return grouped
+            .sorted { $0.key > $1.key }
+            .map { (date, transactions) in
+                let label = calendar.isDateInToday(date) ? "Today" :
+                            calendar.isDateInYesterday(date) ? "Yesterday" :
+                            date.formatted(.dateTime.weekday(.wide).month().day())
+                return (label, transactions.sorted { $0.date > $1.date })
+            }
     }
 
     private var totalSpend: Double {
@@ -52,7 +62,6 @@ struct TransactionListView: View {
                         } label: {
                             Label("Scan Receipt", systemImage: "camera")
                         }
-
                         Button {
                             showAddManual = true
                         } label: {
@@ -68,9 +77,6 @@ struct TransactionListView: View {
             }
             .sheet(isPresented: $showScanReceipt) {
                 ScanReceiptView()
-            }
-            .task {
-                try? service.seedSampleData(modelContext: modelContext)
             }
         }
     }
@@ -102,7 +108,8 @@ struct TransactionListView: View {
                         TransactionRow(transaction: transaction)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
-                                    try? service.delete(transaction: transaction, modelContext: modelContext)
+                                    modelContext.delete(transaction)
+                                    try? modelContext.save()
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -127,7 +134,6 @@ struct TransactionListView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-
             HStack(spacing: 12) {
                 Button {
                     showScanReceipt = true
@@ -148,7 +154,7 @@ struct TransactionListView: View {
     }
 }
 
-// transaction row
+// transaction view
 
 struct TransactionRow: View {
     let transaction: Transaction
