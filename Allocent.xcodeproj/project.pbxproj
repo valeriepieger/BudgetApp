@@ -7,11 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3B2AC6022F7F7740008D4983 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 3B2AC6012F7F7740008D4983 /* FirebaseAuth */; };
-		3B2AC6042F7F7740008D4983 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 3B2AC6032F7F7740008D4983 /* FirebaseCore */; };
-		3B2AC6062F7F7740008D4983 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 3B2AC6052F7F7740008D4983 /* FirebaseFirestore */; };
-		3B2AC6082F7F7740008D4983 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 3B2AC6072F7F7740008D4983 /* FirebaseFunctions */; };
-		3B2AC60A2F7F7740008D4983 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 3B2AC6092F7F7740008D4983 /* FirebaseStorage */; };
+		1710D5272F4FF3A0004DAAE5 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5262F4FF3A0004DAAE5 /* FirebaseAuth */; };
+		1710D5292F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5282F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community */; };
+		1710D52B2F4FF3A0004DAAE5 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D52A2F4FF3A0004DAAE5 /* FirebaseCore */; };
+		1710D52D2F4FF3A0004DAAE5 /* FirebaseDatabase in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D52C2F4FF3A0004DAAE5 /* FirebaseDatabase */; };
+		1710D52F2F4FF3A0004DAAE5 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D52E2F4FF3A0004DAAE5 /* FirebaseFirestore */; };
+		1710D5312F4FF3A0004DAAE5 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5302F4FF3A0004DAAE5 /* FirebaseFunctions */; };
+		1710D5332F4FF3A0004DAAE5 /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 1710D5322F4FF3A0004DAAE5 /* FirebaseStorage */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -23,7 +25,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				"GoogleService-Info-Val.plist",
-				Info.plist,
 			);
 			target = 3B0E59C32F462CCF009C3218 /* Allocent */;
 		};
@@ -45,11 +46,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3B2AC6042F7F7740008D4983 /* FirebaseCore in Frameworks */,
-				3B2AC6022F7F7740008D4983 /* FirebaseAuth in Frameworks */,
-				3B2AC6062F7F7740008D4983 /* FirebaseFirestore in Frameworks */,
-				3B2AC60A2F7F7740008D4983 /* FirebaseStorage in Frameworks */,
-				3B2AC6082F7F7740008D4983 /* FirebaseFunctions in Frameworks */,
+				1710D5272F4FF3A0004DAAE5 /* FirebaseAuth in Frameworks */,
+				1710D52B2F4FF3A0004DAAE5 /* FirebaseCore in Frameworks */,
+				1710D52D2F4FF3A0004DAAE5 /* FirebaseDatabase in Frameworks */,
+				1710D5312F4FF3A0004DAAE5 /* FirebaseFunctions in Frameworks */,
+				1710D5332F4FF3A0004DAAE5 /* FirebaseStorage in Frameworks */,
+				1710D52F2F4FF3A0004DAAE5 /* FirebaseFirestore in Frameworks */,
+				1710D5292F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -93,11 +96,13 @@
 			);
 			name = Allocent;
 			packageProductDependencies = (
-				3B2AC6012F7F7740008D4983 /* FirebaseAuth */,
-				3B2AC6032F7F7740008D4983 /* FirebaseCore */,
-				3B2AC6052F7F7740008D4983 /* FirebaseFirestore */,
-				3B2AC6072F7F7740008D4983 /* FirebaseFunctions */,
-				3B2AC6092F7F7740008D4983 /* FirebaseStorage */,
+				1710D5262F4FF3A0004DAAE5 /* FirebaseAuth */,
+				1710D5282F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community */,
+				1710D52A2F4FF3A0004DAAE5 /* FirebaseCore */,
+				1710D52C2F4FF3A0004DAAE5 /* FirebaseDatabase */,
+				1710D52E2F4FF3A0004DAAE5 /* FirebaseFirestore */,
+				1710D5302F4FF3A0004DAAE5 /* FirebaseFunctions */,
+				1710D5322F4FF3A0004DAAE5 /* FirebaseStorage */,
 			);
 			productName = BudgetApp;
 			productReference = 3B0E59C42F462CCF009C3218 /* Allocent.app */;
@@ -128,7 +133,7 @@
 			mainGroup = 3B0E59BB2F462CCF009C3218;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3B0E59C52F462CCF009C3218 /* Products */;
@@ -160,7 +165,7 @@
 			);
 			inputPaths = (
 				"$(PROJECT_DIR)/GoogleService-Info-Amber.plist",
-				"$(PROJECT_DIR)/Allocent/GoogleService-Info-Val.plist",
+				"$(PROJECT_DIR)/GoogleService-Info-Val.plist",
 			);
 			outputFileListPaths = (
 			);
@@ -169,7 +174,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\n\nBUNDLE_ID=\"${PRODUCT_BUNDLE_IDENTIFIER}\"\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\n\necho \"BUNDLE_ID = ${BUNDLE_ID}\"\necho \"PROJECT_DIR = ${PROJECT_DIR}\"\necho \"DEST = ${DEST}\"\n\nif [ \"${BUNDLE_ID}\" = \"liu.Allocent\" ]; then\n  SRC=\"${PROJECT_DIR}/GoogleService-Info-Amber.plist\"\nelif [ \"${BUNDLE_ID}\" = \"pieger.BudgetApp\" ]; then\n  SRC=\"${PROJECT_DIR}/Allocent/GoogleService-Info-Val.plist\"\nelse\n  echo \"No matching plist for bundle id: ${BUNDLE_ID}\"\n  exit 1\nfi\n\necho \"SRC = ${SRC}\"\nif [ ! -f \"${SRC}\" ]; then\n  echo \"ERROR: Source plist not found at ${SRC}\"\n  exit 1\nfi\n\ncp \"${SRC}\" \"${DEST}\"\necho \"Copied GoogleService-Info.plist successfully.\"\n";
+			shellScript = "set -e\n\nBUNDLE_ID=\"${PRODUCT_BUNDLE_IDENTIFIER}\"\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}/GoogleService-Info.plist\"\n\necho \"BUNDLE_ID = ${BUNDLE_ID}\"\necho \"PROJECT_DIR = ${PROJECT_DIR}\"\necho \"DEST = ${DEST}\"\n\nif [ \"${BUNDLE_ID}\" = \"liu.Allocent\" ] || [ \"${BUNDLE_ID}\" = \"liu.AllocentApp\" ]; then\n  SRC=\"${PROJECT_DIR}/GoogleService-Info-Amber.plist\"\nelif [ \"${BUNDLE_ID}\" = \"pieger.BudgetApp\" ]; then\n  SRC=\"${PROJECT_DIR}/GoogleService-Info-Val.plist\"\nelse\n  echo \"No matching plist for bundle id: ${BUNDLE_ID}\"\n  exit 1\nfi\n\necho \"SRC = ${SRC}\"\nif [ ! -f \"${SRC}\" ]; then\n  echo \"ERROR: Source plist not found at ${SRC}\"\n  exit 1\nfi\n\ncp \"${SRC}\" \"${DEST}\"\necho \"Copied GoogleService-Info.plist successfully.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -219,7 +224,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = RXSV43CX57;
+				DEVELOPMENT_TEAM = MH3FT8LAR7;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -284,7 +289,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = RXSV43CX57;
+				DEVELOPMENT_TEAM = MH3FT8LAR7;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -315,22 +320,20 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RXSV43CX57;
+				DEVELOPMENT_TEAM = MH3FT8LAR7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Allocent/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos of receipts to add transactions";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = pieger.BudgetApp;
+				PRODUCT_BUNDLE_IDENTIFIER = liu.AllocentApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -351,22 +354,20 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = RXSV43CX57;
+				DEVELOPMENT_TEAM = MH3FT8LAR7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Allocent/Info.plist;
-				INFOPLIST_KEY_NSCameraUsageDescription = "Take photos of receipts to add transactions";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = pieger.BudgetApp;
+				PRODUCT_BUNDLE_IDENTIFIER = liu.AllocentApp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -403,40 +404,50 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+		1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 12.11.0;
+				minimumVersion = 12.10.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		3B2AC6012F7F7740008D4983 /* FirebaseAuth */ = {
+		1710D5262F4FF3A0004DAAE5 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
 		};
-		3B2AC6032F7F7740008D4983 /* FirebaseCore */ = {
+		1710D5282F4FF3A0004DAAE5 /* FirebaseAuthCombine-Community */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = "FirebaseAuthCombine-Community";
+		};
+		1710D52A2F4FF3A0004DAAE5 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
 		};
-		3B2AC6052F7F7740008D4983 /* FirebaseFirestore */ = {
+		1710D52C2F4FF3A0004DAAE5 /* FirebaseDatabase */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseDatabase;
+		};
+		1710D52E2F4FF3A0004DAAE5 /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
 		};
-		3B2AC6072F7F7740008D4983 /* FirebaseFunctions */ = {
+		1710D5302F4FF3A0004DAAE5 /* FirebaseFunctions */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFunctions;
 		};
-		3B2AC6092F7F7740008D4983 /* FirebaseStorage */ = {
+		1710D5322F4FF3A0004DAAE5 /* FirebaseStorage */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 3B2AC6002F7F7740008D4983 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			package = 1710D5252F4FF3A0004DAAE5 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
 		};
 /* End XCSwiftPackageProductDependency section */
