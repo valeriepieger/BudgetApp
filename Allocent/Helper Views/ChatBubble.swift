@@ -8,28 +8,46 @@ struct ChatBubble: View {
     }
 
     var body: some View {
-        HStack {
-            if isUser { Spacer(minLength: 60) }
+        if message.role == .system {
+            Text(message.content)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 8)
+                .accessibilityLabel("System message: \(message.content)")
+        } else {
+            HStack(alignment: .bottom, spacing: 8) {
+                if isUser { Spacer(minLength: 60) }
 
-            switch message.role {
-            case .system:
-                Text(message.content)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 8)
-                    .accessibilityLabel("System message: \(message.content)")
-            case .user, .assistant:
+                if message.role == .assistant {
+                    Circle()
+                        .fill(Color("OliveGreen").opacity(0.15))
+                        .frame(width: 28, height: 28)
+                        .overlay {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color("OliveGreen"))
+                        }
+                }
+
                 Text(message.content)
                     .font(.body)
                     .foregroundStyle(isUser ? Color("PrimaryButtonText") : .primary)
-                    .padding(12)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
                     .background(isUser ? Color("PrimaryButton") : Color("CardBackground"))
-                    .cornerRadius(16)
+                    .clipShape(
+                        UnevenRoundedRectangle(
+                            topLeadingRadius: 18,
+                            bottomLeadingRadius: isUser ? 18 : 4,
+                            bottomTrailingRadius: isUser ? 4 : 18,
+                            topTrailingRadius: 18
+                        )
+                    )
                     .shadow(
-                        color: Color.black.opacity(isUser ? 0 : 0.05),
+                        color: Color.black.opacity(isUser ? 0.08 : 0.05),
                         radius: 4, x: 0, y: 2
                     )
                     .accessibilityLabel(
@@ -37,11 +55,11 @@ struct ChatBubble: View {
                             ? "You said: \(message.content)"
                             : "Advisor said: \(message.content)"
                     )
-            }
 
-            if !isUser { Spacer(minLength: 60) }
+                if !isUser { Spacer(minLength: 60) }
+            }
+            .padding(.horizontal)
         }
-        .padding(.horizontal)
     }
 }
 

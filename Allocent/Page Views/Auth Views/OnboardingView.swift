@@ -11,62 +11,133 @@ struct OnboardingView: View {
     @EnvironmentObject var session: SessionViewModel
     let user: AppUser
 
+    @StateObject private var viewModel = OnboardingViewModel()
+
     var body: some View {
         ZStack {
             Color("Background").ignoresSafeArea()
 
-            VStack(alignment: .leading, spacing: 16) {
-
-                HeaderWithSubtitle(
-                    title: "Welcome, \(user.firstName)",
-                    subtitle: "Temporary setup screen"
+            VStack(spacing: 0) {
+                // Progress bar
+                OnboardingProgressBar(
+                    currentStep: viewModel.currentStep.rawValue,
+                    totalSteps: viewModel.stepCount
                 )
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
 
-                VStack(alignment: .leading, spacing: 12) {
-
-                    Text("This onboarding screen is temporary.")
-                        .font(.subheadline)
-                        .foregroundStyle(.primary)
-
-                    Text("In the next iteration, this will collect initial income, categories, and bank connections.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
-                    Button {
-                        Task { await session.completeOnboarding() }
-                    } label: {
-                        Text("Continue to App")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 52)
-                            .background(Color("OliveGreen"))
-                            .cornerRadius(16)
+                // Step content
+                Group {
+                    switch viewModel.currentStep {
+                    case .welcome:
+                        welcomeStep
+                    case .income:
+                        OnboardingIncomeStep()
+                    case .bankLink:
+                        OnboardingBankLinkStep()
+                    case .completion:
+                        OnboardingCompletionStep(user: user)
                     }
-                    .padding(.top, 8)
-
                 }
-                .padding(16)
-                .background(Color("CardBackground"))
-                .cornerRadius(20)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 20)
-                        .stroke(.primary.opacity(0.08), lineWidth: 1)
-                )
+                .transition(.asymmetric(
+                    insertion: .move(edge: .trailing).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+            }
+        }
+        .environmentObject(viewModel)
+    }
+
+    // MARK: - Welcome Step
+
+    private var welcomeStep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Spacer().frame(height: 24)
+
+            Text("Welcome, \(user.firstName)!")
+                .font(.largeTitle)
+                .bold()
                 .padding(.horizontal, 24)
 
-                Button {
-                    session.signOut()
-                } label: {
-                    Text("Sign Out")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+            Text("Let's set up your budget in just a few steps.")
+                .font(.title3)
+                .foregroundStyle(.secondary)
                 .padding(.horizontal, 24)
 
-                Spacer()
+            Spacer().frame(height: 16)
+
+            AppCard {
+                VStack(alignment: .leading, spacing: 16) {
+                    OnboardingBullet(
+                        icon: "dollarsign.circle.fill",
+                        title: "Add your income",
+                        subtitle: "Tell us how much you earn each month"
+                    )
+                    OnboardingBullet(
+                        icon: "building.columns.fill",
+                        title: "Link your bank",
+                        subtitle: "Optionally connect accounts to track spending"
+                    )
+                    OnboardingBullet(
+                        icon: "checkmark.circle.fill",
+                        title: "Start tracking",
+                        subtitle: "You're ready to take control of your finances"
+                    )
+                }
+            }
+            .padding(.horizontal, 24)
+
+            Spacer()
+
+            PrimaryActionButton(title: "Get Started") {
+                viewModel.goToNext()
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 32)
+        }
+    }
+}
+
+// MARK: - Progress Bar
+
+private struct OnboardingProgressBar: View {
+    let currentStep: Int
+    let totalSteps: Int
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Capsule()
+                    .fill(index <= currentStep
+                          ? Color("OliveGreen")
+                          : Color.gray.opacity(0.2))
+                    .frame(height: 4)
+                    .animation(.easeInOut(duration: 0.3), value: currentStep)
+            }
+        }
+    }
+}
+
+// MARK: - Onboarding Bullet
+
+private struct OnboardingBullet: View {
+    let icon: String
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Image(systemName: icon)
+                .font(.title2)
+                .foregroundStyle(Color("OliveGreen"))
+                .frame(width: 32)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.headline)
+                Text(subtitle)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
         }
     }
@@ -83,8 +154,7 @@ struct OnboardingView: View {
             bio: "",
             createdAt: Date(),
             needsOnboarding: true,
-            linked: false,
-//            lastSyncAt: nil as Date?
+            linked: false
         )
     )
     .environmentObject(SessionViewModel())

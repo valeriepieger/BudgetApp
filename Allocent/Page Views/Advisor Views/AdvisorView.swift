@@ -6,28 +6,81 @@
 //
 
 import SwiftUI
-import FoundationModels
 
 struct AdvisorView: View {
     @State private var viewModel = AdvisorViewModel()
+    @State private var isFirstAppear = true
 
     var body: some View {
         ZStack {
             Color("Background").ignoresSafeArea()
 
             VStack(spacing: 0) {
-                Header(categoryName: "Advisor")
-
-                if viewModel.isModelAvailable {
-                    ChatContentView(viewModel: viewModel)
+                AdvisorHeader(viewModel: viewModel)
+                ChatContentView(viewModel: viewModel)
+            }
+        }
+        .onAppear {
+            Task {
+                if isFirstAppear {
+                    isFirstAppear = false
+                    await viewModel.setup()
                 } else {
-                    AdvisorUnavailableView()
+                    await viewModel.startNewSession()
                 }
             }
         }
-        .task {
-            await viewModel.setup()
+        .sheet(isPresented: $viewModel.showHistory) {
+            ChatHistoryView(viewModel: viewModel)
         }
+    }
+}
+
+struct AdvisorHeader: View {
+    @Bindable var viewModel: AdvisorViewModel
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [Color("OliveGreen"), Color("OliveGreen").opacity(0.6)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 42, height: 42)
+                .overlay {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Advisor")
+                    .font(.title3)
+                    .bold()
+                Text("Budget Assistant")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                Task { await viewModel.loadHistory() }
+                viewModel.showHistory = true
+            } label: {
+                Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                    .font(.title3)
+                    .foregroundStyle(Color("OliveGreen"))
+            }
+            .accessibilityLabel("Chat history")
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+        .background(Color("CardBackground"))
+        .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
     }
 }
 
@@ -76,27 +129,25 @@ struct ChatContentView: View {
                 }
             }
 
-            Divider()
-
-            //Text field for user to query
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 TextField("Ask about your budget...", text: $viewModel.inputText, axis: .vertical)
                     .lineLimit(1...4)
-                    .padding(12)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
                     .background(Color("CardBackground"))
-                    .cornerRadius(12)
-                    .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                    .clipShape(.rect(cornerRadius: 22))
+                    .shadow(color: Color.black.opacity(0.06), radius: 6, x: 0, y: 2)
                     .onSubmit { sendMessage() }
                     .focused($isTextFieldFocused)
 
                 Button("Send message", systemImage: "arrow.up.circle.fill", action: sendMessage)
                     .labelStyle(.iconOnly)
-                    .font(.system(size: 32))
-                    .foregroundStyle(canSend ? Color("OliveGreen") : Color("OliveGreen").opacity(0.4))
+                    .font(.system(size: 34))
+                    .foregroundStyle(canSend ? Color("OliveGreen") : Color("OliveGreen").opacity(0.3))
                     .disabled(!canSend)
             }
             .padding(.horizontal)
-            .padding(.vertical, 8)
+            .padding(.vertical, 10)
             .background(Color("Background"))
 
         }
@@ -119,54 +170,24 @@ struct ChatContentView: View {
     }
 }
 
-////for user to query
-//struct ChatInputBar: View {
-//    @Bindable var viewModel: AdvisorViewModel
-//
-//    
-//}
-
-//for when on simulator or device doesn't have apple intelligence, show unavail screen
-struct AdvisorUnavailableView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Spacer()
-
-            Image(systemName: "bubble.left.and.exclamationmark.bubble.right")
-                .font(.system(size: 48))
-                .foregroundStyle(Color("OliveGreen").opacity(0.6))
-
-            Text("Advisor Unavailable")
-                .font(.title3)
-                .fontWeight(.medium)
-
-            Text("The budget advisor requires Apple Intelligence, which is not available on this device.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 32)
-
-            Spacer()
-        }
-    }
-}
-
 struct TypingIndicator: View {
     @State private var phase: Int = 0
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             ForEach(0..<3, id: \.self) { index in
                 Circle()
                     .fill(Color("OliveGreen"))
                     .frame(width: 8, height: 8)
-                    .opacity(index <= phase ? 1.0 : 0.3)
+                    .scaleEffect(phase == index ? 1.3 : 0.7)
+                    .opacity(phase == index ? 1.0 : 0.4)
+                    .animation(.easeInOut(duration: 0.4), value: phase)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(Color("CardBackground"))
-        .cornerRadius(16)
+        .clipShape(.rect(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         .accessibilityLabel("Advisor is thinking")
         .task {

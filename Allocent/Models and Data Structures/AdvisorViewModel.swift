@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
-import FoundationModels
 
 @MainActor
 @Observable
@@ -17,9 +16,15 @@ final class AdvisorViewModel {
     var messages: [ChatMessage] = []
     var inputText: String = ""
     var isLoading: Bool = false
-    var isModelAvailable: Bool = false
 
-    private var session: LanguageModelSession?
+    //chat history state
+    var showHistory: Bool = false
+    var pastSessions: [ChatSession] = []
+    var isLoadingHistory: Bool = false
+    var selectedSession: ChatSession? = nil
+    var isLoadingSession: Bool = false
+
+    private var systemPrompt: String = ""
     private let db = Firestore.firestore()
 
     private var uid: String? {
@@ -32,66 +37,27 @@ final class AdvisorViewModel {
         return formatter.string(from: Date())
     }
 
-
     func setup() async {
-        //can't be tested on simulator. must use physical device
-        #if targetEnvironment(simulator)
-        isModelAvailable = false
-        messages.append(ChatMessage(
-            role: .system,
-            content: "The budget advisor uses Apple Intelligence, which is not available in the Simulator. Please run on a physical device to use this feature."
-        ))
-        return
-        #else
-        let model = SystemLanguageModel.default
-        switch model.availability {
-        case .available:
-            isModelAvailable = true
-        case .unavailable(.appleIntelligenceNotEnabled):
-            //apple intelligence available on phone, but not enabled by user. user must enable and then may have to wait a few mins until things like playground finish downloading
-            isModelAvailable = false
-            messages.append(ChatMessage(
-                role: .system,
-                content: "Please enable Apple Intelligence in Settings to use the budget advisor."
-            ))
-            return
-        case .unavailable:
-            //if on a device that isn't equipped with apple intelligence :(
-            isModelAvailable = false
-            messages.append(ChatMessage(
-                role: .system,
-                content: "Apple Intelligence is not available on this device. The budget advisor requires a compatible device running iOS 26 or later."
-            ))
-            return
-        }
-        #endif
+        systemPrompt = await buildSystemInstructions()
 
-        let instructions = await buildSystemInstructions()
-        session = LanguageModelSession(instructions: instructions)
-
-        //first message from bot.
-        //TODO: this is an issue bc keeps "sending" the message everytime click back to advisor tab.
         messages.append(ChatMessage(
             role: .assistant,
             content: "Hi! I've loaded your budget data for this month. You can ask me things like \"How much do I have left for food?\" or \"Which categories am I spending the most in?\""
         ))
     }
 
-
-    //AI response
+    //send message to the Anthropic API
     func sendMessage() async {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, let session else { return }
+        guard !text.isEmpty else { return }
 
         messages.append(ChatMessage(role: .user, content: text))
         inputText = ""
         isLoading = true
 
         do {
-            let response = try await session.respond(to: text)
-            messages.append(ChatMessage(role: .assistant, content: response.content))
-        } catch let error as LanguageModelSession.GenerationError {
-            handleGenerationError(error)
+            let reply = try await callAnthropic(userMessage: text)
+            messages.append(ChatMessage(role: .assistant, content: reply))
         } catch {
             messages.append(ChatMessage(
                 role: .system,
@@ -102,32 +68,103 @@ final class AdvisorViewModel {
         isLoading = false
     }
 
-    //if errors
-    func resetSession() async {
+    //new session when navigates back to advisor tab
+    func startNewSession() async {
+        guard hasUserMessages else { return }
+        await saveCurrentSessionIfNeeded()
         messages.removeAll()
-        session = nil
         await setup()
     }
 
-    private func handleGenerationError(_ error: LanguageModelSession.GenerationError) {
-        switch error {
-        case .exceededContextWindowSize:
-            messages.append(ChatMessage(
-                role: .system,
-                content: "Our conversation got too long. Starting a fresh session..."
-            ))
-            Task { await resetSession() }
-        default:
-            messages.append(ChatMessage(
-                role: .system,
-                content: "Something went wrong: \(error.localizedDescription)"
-            ))
+    func resetSession() async {
+        messages.removeAll()
+        await setup()
+    }
+
+    //for chat history
+    func loadHistory() async {
+        isLoadingHistory = true
+        do {
+            pastSessions = try await ChatSessionService.fetchSessionList()
+        } catch {
+            pastSessions = []
+        }
+        isLoadingHistory = false
+    }
+
+    func loadSession(id: String) async {
+        isLoadingSession = true
+        do {
+            selectedSession = try await ChatSessionService.fetchSession(id: id)
+        } catch {
+            selectedSession = nil
+        }
+        isLoadingSession = false
+    }
+
+    private var hasUserMessages: Bool {
+        messages.contains { $0.role == .user }
+    }
+
+    private func saveCurrentSessionIfNeeded() async {
+        guard hasUserMessages else { return }
+        do {
+            try await ChatSessionService.save(messages)
+        } catch {
+            print("Failed to save chat session: \(error.localizedDescription)")
         }
     }
 
-    //instructions/skills for AI chatbot
+
+    private func callAnthropic(userMessage: String) async throws -> String {
+        let url = URL(string: "https://api.anthropic.com/v1/messages")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue(Secrets.anthropicAPIKey, forHTTPHeaderField: "x-api-key")
+        request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+
+        //build conversation history from messages (excluding system messages)
+        var apiMessages: [[String: String]] = []
+        for msg in messages {
+            switch msg.role {
+            case .user:
+                apiMessages.append(["role": "user", "content": msg.content])
+            case .assistant:
+                apiMessages.append(["role": "assistant", "content": msg.content])
+            case .system:
+                break
+            }
+        }
+
+        let body: [String: Any] = [
+            "model": "claude-haiku-4-5-20251001",
+            "max_tokens": 1024,
+            "system": systemPrompt,
+            "messages": apiMessages
+        ]
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse,
+              (200...299).contains(httpResponse.statusCode) else {
+            throw AnthropicError.requestFailed
+        }
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let content = json["content"] as? [[String: Any]],
+              let firstBlock = content.first,
+              let text = firstBlock["text"] as? String else {
+            throw AnthropicError.invalidResponse
+        }
+
+        return text
+    }
+
+
     private func buildSystemInstructions() async -> String {
-        //will have all the instructions/specifications/context for the bot
         var parts: [String] = []
 
         parts.append("""
@@ -138,7 +175,9 @@ final class AdvisorViewModel {
             You are NOT a financial advisor. Do not recommend investments, credit products, or \
             financial services. Just help them make sense of their own numbers. \
             Keep responses short (2-4 sentences) unless the user asks for more detail. \
-            Be encouraging and practical.
+            Be encouraging and practical. \
+            IMPORTANT: Do NOT use markdown formatting such as asterisks, hashtags, or backticks. \
+            Use plain text only. For lists, use dashes. For emphasis, use CAPS sparingly.
             """)
 
         guard let uid else {
@@ -146,10 +185,7 @@ final class AdvisorViewModel {
             return parts.joined(separator: "\n\n")
         }
 
-        //TODO: once expenses and budget functionality complete, need to make sure fields in firestore are named correctly and this part below actually works as context
-        //at this point, user could be real user w uid but just not have expenses/budget data
-        
-        //get the user's budget categories
+        //fetch budget categories
         var categories: [BudgetCategory] = []
         if let snap = try? await db.collection("users").document(uid)
             .collection("categories").getDocuments() {
@@ -164,7 +200,7 @@ final class AdvisorViewModel {
             }
         }
 
-        //get user expenses for curr month
+        //fetch expenses for current month
         var spentByCategory: [String: Double] = [:]
         if let snap = try? await db.collection("users").document(uid)
             .collection("expenses")
@@ -178,7 +214,7 @@ final class AdvisorViewModel {
             }
         }
 
-        //get user income sources
+        //fetch income sources
         var incomeSources: [IncomeSource] = []
         if let snap = try? await db.collection("users").document(uid)
             .collection("income_sources").getDocuments() {
@@ -193,6 +229,12 @@ final class AdvisorViewModel {
             }
         }
 
+        //fetch transactions
+        var transactions: [Transaction] = []
+        if let fetched = try? await TransactionService.fetch() {
+            transactions = fetched
+        }
+
         let totalIncome = incomeSources.reduce(0) { $0 + $1.amount }
         let totalBudget = categories.reduce(0) { $0 + $1.limit }
         let totalSpent = spentByCategory.values.reduce(0, +)
@@ -200,6 +242,7 @@ final class AdvisorViewModel {
 
         parts.append("--- USER'S BUDGET DATA (Current Month: \(currentMonth)) ---")
 
+        // Income
         if !incomeSources.isEmpty {
             let lines = incomeSources.map { "  - \($0.name): $\(String(format: "%.2f", $0.amount))" }
             parts.append("Income Sources:\n\(lines.joined(separator: "\n"))\nTotal Monthly Income: $\(String(format: "%.2f", totalIncome))")
@@ -207,6 +250,7 @@ final class AdvisorViewModel {
             parts.append("Income: No income sources set up yet.")
         }
 
+        // Categories & expenses
         if !categories.isEmpty {
             var lines: [String] = []
             for cat in categories.sorted(by: { $0.name < $1.name }) {
@@ -220,6 +264,28 @@ final class AdvisorViewModel {
             parts.append("Budget Categories: None set up yet.")
         }
 
+        // Transactions
+        if !transactions.isEmpty {
+            let dateFormatter = DateFormatter()
+            dateFormatter.dateStyle = .short
+            // Show up to 30 most recent transactions to keep the prompt reasonable
+            let recent = transactions.prefix(30)
+            var lines: [String] = []
+            for t in recent {
+                let dateStr = dateFormatter.string(from: t.date)
+                lines.append("  - \(dateStr) | \(t.merchant) | $\(String(format: "%.2f", t.amount)) | \(t.category.rawValue)\(t.notes.isEmpty ? "" : " | \(t.notes)")")
+            }
+            let totalTransactions = transactions.count
+            var header = "Recent Transactions (\(recent.count) of \(totalTransactions)):"
+            if totalTransactions > 30 {
+                header += " (showing most recent 30)"
+            }
+            parts.append("\(header)\n\(lines.joined(separator: "\n"))")
+        } else {
+            parts.append("Transactions: None recorded yet.")
+        }
+
+        // Summary
         parts.append("""
             Summary:
               Total Budget: $\(String(format: "%.2f", totalBudget))
@@ -230,3 +296,16 @@ final class AdvisorViewModel {
         return parts.joined(separator: "\n\n")
     }
 }
+
+enum AnthropicError: LocalizedError {
+    case requestFailed
+    case invalidResponse
+
+    var errorDescription: String? {
+        switch self {
+        case .requestFailed: return "The request to the AI service failed."
+        case .invalidResponse: return "Received an invalid response from the AI service."
+        }
+    }
+}
+
