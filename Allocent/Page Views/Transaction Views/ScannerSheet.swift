@@ -5,12 +5,10 @@
 //  Created by Amber Liu on 4/2/26.
 //
 
-
 import SwiftUI
 import VisionKit
+import AVFoundation
 
-// A SwiftUI wrapper around DataScannerViewController.
-// Captures live text from the camera and returns it via onTextCaptured.
 struct ScannerSheet: UIViewControllerRepresentable {
     let onTextCaptured: (String) -> Void
     let onCancel: () -> Void
@@ -30,70 +28,94 @@ struct ScannerSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: DataScannerViewController, context: Context) {
-        try? uiViewController.startScanning()
+        if !uiViewController.isScanning {
+            try? uiViewController.startScanning()
+        }
+        guard let device = AVCaptureDevice.default(for: .video), device.hasTorch else { return }
+        try? device.lockForConfiguration()
+        device.torchMode = .on
+        device.unlockForConfiguration()
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(onTextCaptured: onTextCaptured, onCancel: onCancel)
     }
 
-    // Coordinator
-
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         let onTextCaptured: (String) -> Void
         let onCancel: () -> Void
+        private var captureTimer: Timer?
+        private var latestItems: [RecognizedItem] = []
 
         init(onTextCaptured: @escaping (String) -> Void, onCancel: @escaping () -> Void) {
             self.onTextCaptured = onTextCaptured
             self.onCancel = onCancel
         }
 
-        // Called when user taps a recognized item in the live view
-        func dataScanner(_ dataScanner: DataScannerViewController, didTapOn item: RecognizedItem) {
-            var text = ""
-            switch item {
-            case .text(let recognizedText):
-                text = recognizedText.transcript
-            case .barcode(_):
-                break 
-            @unknown default:
-                break
+        func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            latestItems = allItems
+            // Only start timer once — don't reset it on every new item
+            if captureTimer == nil {
+                captureTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+                    self?.captureAll(dataScanner)
+                }
             }
-            guard !text.isEmpty else { return }
+        }
+
+        func dataScanner(_ dataScanner: DataScannerViewController, didUpdate updatedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+            // Keep updating latest items so we capture the most complete set
+            latestItems = allItems
+        }
+
+        private func captureAll(_ dataScanner: DataScannerViewController) {
+            var texts: [String] = []
+            for item in latestItems {
+                if case .text(let recognizedText) = item {
+                    texts.append(recognizedText.transcript)
+                }
+            }
+            let allText = texts.joined(separator: "\n")
+            guard !allText.isEmpty else { return }
             dataScanner.stopScanning()
-            onTextCaptured(text)
+            onTextCaptured(allText)
         }
     }
 }
 
-// Availability check view — shows ScannerSheet only when DataScanner is supported
+// MARK: - Availability View
+
 struct ScannerAvailabilityView: View {
     let onTextCaptured: (String) -> Void
     let onCancel: () -> Void
 
     var body: some View {
         if DataScannerViewController.isSupported && DataScannerViewController.isAvailable {
-            ZStack(alignment: .topTrailing) {
-                ScannerSheet(onTextCaptured: onTextCaptured, onCancel: onCancel)
-                    .ignoresSafeArea()
+            ZStack(alignment: .bottom) {
+                ScannerSheet(
+                    onTextCaptured: onTextCaptured,
+                    onCancel: onCancel
+                )
+                .ignoresSafeArea()
 
-                // Capture hint overlay
-                VStack {
-                    Spacer()
-                    Text("Point at receipt, then tap any text to capture")
+                VStack(spacing: 12) {
+                    Text("Hold steady over the full receipt")
                         .font(.footnote)
                         .foregroundStyle(.white)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)
                         .background(.ultraThinMaterial, in: Capsule())
-                        .padding(.bottom, 40)
-                }
 
-                Button("Cancel") {
-                    onCancel()
+                    Button {
+                        onCancel()
+                    } label: {
+                        Label("Cancel", systemImage: "xmark")
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
+                            .background(.ultraThinMaterial, in: Capsule())
+                    }
+                    .padding(.bottom, 40)
                 }
-                .foregroundStyle(.white)
-                .padding()
             }
         } else {
             ContentUnavailableView(

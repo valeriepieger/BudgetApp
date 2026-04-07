@@ -5,12 +5,9 @@
 //  Created by Amber Liu on 4/2/26.
 //
 
-
 import SwiftUI
-import SwiftData
 
 struct AddTransactionView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @State private var merchant = ""
@@ -18,14 +15,17 @@ struct AddTransactionView: View {
     @State private var date = Date.now
     @State private var category: TransactionCategory = .other
     @State private var notes = ""
-    @State private var showValidationError = false
+    @State private var isSaving = false
+    @State private var errorMessage: String?
 
     private var amountValue: Double? {
         Double(amount.replacingOccurrences(of: "$", with: "").trimmingCharacters(in: .whitespaces))
     }
 
     private var isValid: Bool {
-        !merchant.trimmingCharacters(in: .whitespaces).isEmpty && amountValue != nil && amountValue! > 0
+        !merchant.trimmingCharacters(in: .whitespaces).isEmpty &&
+        amountValue != nil &&
+        amountValue! > 0
     }
 
     var body: some View {
@@ -35,8 +35,7 @@ struct AddTransactionView: View {
                     TextField("Merchant name", text: $merchant)
 
                     HStack {
-                        Text("$")
-                            .foregroundStyle(.secondary)
+                        Text("$").foregroundStyle(.secondary)
                         TextField("0.00", text: $amount)
                             .keyboardType(.decimalPad)
                     }
@@ -47,10 +46,7 @@ struct AddTransactionView: View {
                 Section("Category") {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 8) {
                         ForEach(TransactionCategory.allCases, id: \.self) { cat in
-                            CategoryChip(
-                                category: cat,
-                                isSelected: category == cat
-                            ) {
+                            CategoryChip(category: cat, isSelected: category == cat) {
                                 category = cat
                             }
                         }
@@ -63,9 +59,9 @@ struct AddTransactionView: View {
                         .lineLimit(3, reservesSpace: true)
                 }
 
-                if showValidationError {
+                if let error = errorMessage {
                     Section {
-                        Label("Please enter a merchant name and a valid amount.", systemImage: "exclamationmark.circle")
+                        Label(error, systemImage: "exclamationmark.circle")
                             .foregroundStyle(.red)
                             .font(.subheadline)
                     }
@@ -78,19 +74,17 @@ struct AddTransactionView: View {
                     Button("Cancel") { dismiss() }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save() }
+                    Button("Save") { Task { await save() } }
                         .bold()
+                        .disabled(!isValid || isSaving)
                 }
             }
         }
     }
 
-    private func save() {
-        guard isValid, let value = amountValue else {
-            showValidationError = true
-            return
-        }
-
+    private func save() async {
+        guard isValid, let value = amountValue else { return }
+        isSaving = true
         let transaction = Transaction(
             merchant: merchant.trimmingCharacters(in: .whitespaces),
             amount: value,
@@ -98,14 +92,15 @@ struct AddTransactionView: View {
             category: category,
             notes: notes
         )
-
-        modelContext.insert(transaction)
-        try? modelContext.save()
-        dismiss()
+        do {
+            try await TransactionService.add(transaction)
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isSaving = false
     }
 }
-
-// MARK: - Category Chip
 
 struct CategoryChip: View {
     let category: TransactionCategory

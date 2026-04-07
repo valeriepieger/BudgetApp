@@ -7,7 +7,7 @@
 
 
 import Foundation
-import SwiftData
+import FirebaseFirestore
 
 enum TransactionCategory: String, Codable, CaseIterable {
     case food = "Food & Drink"
@@ -46,9 +46,8 @@ enum TransactionCategory: String, Codable, CaseIterable {
     }
 }
 
-@Model
-final class Transaction {
-    var id: UUID
+struct Transaction: Identifiable {
+    var id: String
     var merchant: String
     var amount: Double
     var date: Date
@@ -56,7 +55,7 @@ final class Transaction {
     var notes: String
 
     init(
-        id: UUID = UUID(),
+        id: String = UUID().uuidString,
         merchant: String,
         amount: Double,
         date: Date = .now,
@@ -70,27 +69,26 @@ final class Transaction {
         self.category = category
         self.notes = notes
     }
-}
 
-extension Transaction {
-    static var sampleTransactions: [Transaction] {
-        let cal = Calendar.current
-        let today = Date.now
-        let yesterday = cal.date(byAdding: .day, value: -1, to: today)!
-        let twoDaysAgo = cal.date(byAdding: .day, value: -2, to: today)!
-        let lastWeek = cal.date(byAdding: .day, value: -6, to: today)!
-
-        return [
-            Transaction(merchant: "Starbucks", amount: 7.45, date: today, category: .food),
-            Transaction(merchant: "Uber", amount: 14.20, date: today, category: .transport),
-            Transaction(merchant: "Chipotle", amount: 13.85, date: yesterday, category: .food),
-            Transaction(merchant: "Whole Foods", amount: 87.32, date: yesterday, category: .groceries),
-            Transaction(merchant: "Netflix", amount: 15.99, date: twoDaysAgo, category: .entertainment),
-            Transaction(merchant: "CVS Pharmacy", amount: 24.60, date: twoDaysAgo, category: .health),
-            Transaction(merchant: "Apple Store", amount: 49.99, date: lastWeek, category: .shopping),
-            Transaction(merchant: "Shell Gas Station", amount: 62.10, date: lastWeek, category: .transport),
-            Transaction(merchant: "Spotify", amount: 9.99, date: lastWeek, category: .entertainment),
-            Transaction(merchant: "HEB Grocery", amount: 112.47, date: lastWeek, category: .groceries),
+    var firestoreData: [String: Any] {
+        [
+            "merchant": merchant,
+            "amount": amount,
+            "date": Timestamp(date: date),
+            "category": category.rawValue,
+            "notes": notes
         ]
+    }
+
+    static func from(_ doc: DocumentSnapshot) -> Transaction? {
+        guard let data = doc.data() else { return nil }
+        return Transaction(
+            id: doc.documentID,
+            merchant: data["merchant"] as? String ?? "",
+            amount: data["amount"] as? Double ?? 0,
+            date: (data["date"] as? Timestamp)?.dateValue() ?? .now,
+            category: TransactionCategory(rawValue: data["category"] as? String ?? "") ?? .other,
+            notes: data["notes"] as? String ?? ""
+        )
     }
 }

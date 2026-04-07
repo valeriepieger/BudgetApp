@@ -6,19 +6,45 @@
 //
 
 import SwiftUI
-import SwiftData
+
+enum TransactionFilter: String, CaseIterable {
+    case day = "Day"
+    case month = "Month"
+    case year = "Year"
+    case all = "All"
+}
 
 struct TransactionListView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
-
+    @State private var transactions: [Transaction] = []
     @State private var showAddManual = false
     @State private var showScanReceipt = false
     @State private var searchText = ""
+    @State private var isLoading = false
+    @State private var errorMessage: String?
+    @State private var selectedFilter: TransactionFilter = .all
 
     private var filteredTransactions: [Transaction] {
-        guard !searchText.isEmpty else { return transactions }
-        return transactions.filter {
+        let calendar = Calendar.current
+        let now = Date.now
+
+        let dateFiltered: [Transaction]
+        switch selectedFilter {
+        case .day:
+            dateFiltered = transactions.filter { calendar.isDateInToday($0.date) }
+        case .month:
+            dateFiltered = transactions.filter {
+                calendar.isDate($0.date, equalTo: now, toGranularity: .month)
+            }
+        case .year:
+            dateFiltered = transactions.filter {
+                calendar.isDate($0.date, equalTo: now, toGranularity: .year)
+            }
+        case .all:
+            dateFiltered = transactions
+        }
+
+        guard !searchText.isEmpty else { return dateFiltered }
+        return dateFiltered.filter {
             $0.merchant.localizedCaseInsensitiveContains(searchText) ||
             $0.category.rawValue.localizedCaseInsensitiveContains(searchText)
         }
@@ -40,55 +66,59 @@ struct TransactionListView: View {
     }
 
     private var totalSpend: Double {
-        transactions.reduce(0) { $0 + $1.amount }
+        filteredTransactions.reduce(0) { $0 + $1.amount }
     }
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if transactions.isEmpty {
-                    emptyStateView
-                } else {
-                    transactionList
-                }
+        Group {
+            if isLoading {
+                ProgressView("Loading transactions...")
+            } else if filteredTransactions.isEmpty {
+                emptyStateView
+            } else {
+                transactionList
             }
-            .navigationTitle("Transactions")
-            .searchable(text: $searchText, prompt: "Search transactions")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button {
-                            showScanReceipt = true
-                        } label: {
-                            Label("Scan Receipt", systemImage: "camera")
-                        }
-                        Button {
-                            showAddManual = true
-                        } label: {
-                            Label("Enter Manually", systemImage: "pencil")
-                        }
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                }
-            }
-            .sheet(isPresented: $showAddManual) {
-                AddTransactionView()
-            }
-            .sheet(isPresented: $showScanReceipt) {
-                ScanReceiptView()
-            }
+        }
+        .navigationTitle("Transactions")
+        .searchable(text: $searchText, prompt: "Search transactions")
+        .sheet(isPresented: $showAddManual, onDismiss: { Task { await loadTransactions() } }) {
+            AddTransactionView()
+        }
+        .sheet(isPresented: $showScanReceipt, onDismiss: { Task { await loadTransactions() } }) {
+            ScanReceiptView()
+        }
+        .task {
+            await loadTransactions()
         }
     }
 
-    // subviews
+    // Subviews
+
+    private var filterBar: some View {
+        Picker("Filter", selection: $selectedFilter) {
+            ForEach(TransactionFilter.allCases, id: \.self) { filter in
+                Text(filter.rawValue).tag(filter)
+            }
+        }
+        .pickerStyle(.segmented)
+        .padding(.horizontal)
+        .padding(.top, 8)
+    }
 
     private var transactionList: some View {
         List {
+            // Filter picker
+            Section {
+                filterBar
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            }
+
+            // Total spend for current filter
             Section {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Total Spent")
+                        Text(totalLabel)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         Text(totalSpend, format: .currency(code: "USD"))
@@ -108,8 +138,7 @@ struct TransactionListView: View {
                         TransactionRow(transaction: transaction)
                             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                 Button(role: .destructive) {
-                                    modelContext.delete(transaction)
-                                    try? modelContext.save()
+                                    Task { await delete(transaction) }
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
@@ -119,42 +148,78 @@ struct TransactionListView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .refreshable {
+            await loadTransactions()
+        }
+    }
+
+    private var totalLabel: String {
+        switch selectedFilter {
+        case .day: return "Spent Today"
+        case .month: return "Spent This Month"
+        case .year: return "Spent This Year"
+        case .all: return "Total Spent"
+        }
     }
 
     private var emptyStateView: some View {
         VStack(spacing: 20) {
+            // Show filter bar even when empty
+            filterBar
+
             Spacer()
             Image(systemName: "tray")
                 .font(.system(size: 56))
                 .foregroundStyle(.secondary)
-            Text("No Transactions Yet")
+            Text(filteredTransactions.isEmpty && !transactions.isEmpty ? "No transactions for this period" : "No Transactions Yet")
                 .font(.title3.bold())
-            Text("Scan a receipt or add one manually to get started.")
+            Text(filteredTransactions.isEmpty && !transactions.isEmpty ?
+                 "Try selecting a different time period." :
+                 "Scan a receipt or add one manually to get started.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
-            HStack(spacing: 12) {
-                Button {
-                    showScanReceipt = true
-                } label: {
-                    Label("Scan", systemImage: "camera")
-                }
-                .buttonStyle(.borderedProminent)
 
-                Button {
-                    showAddManual = true
-                } label: {
-                    Label("Manual", systemImage: "pencil")
+            if transactions.isEmpty {
+                HStack(spacing: 12) {
+                    Button { showScanReceipt = true } label: {
+                        Label("Scan", systemImage: "camera")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    Button { showAddManual = true } label: {
+                        Label("Manual", systemImage: "pencil")
+                    }
+                    .buttonStyle(.bordered)
                 }
-                .buttonStyle(.bordered)
             }
             Spacer()
         }
     }
+
+    // MARK: - Actions
+
+    private func loadTransactions() async {
+        isLoading = true
+        do {
+            transactions = try await TransactionService.fetch()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    private func delete(_ transaction: Transaction) async {
+        do {
+            try await TransactionService.delete(transaction)
+            transactions.removeAll { $0.id == transaction.id }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
 }
 
-// transaction view
+// MARK: - Transaction Row
 
 struct TransactionRow: View {
     let transaction: Transaction
@@ -168,7 +233,6 @@ struct TransactionRow: View {
                 Text(transaction.category.emoji)
                     .font(.title3)
             }
-
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchant)
                     .font(.body)
@@ -177,9 +241,7 @@ struct TransactionRow: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-
             Spacer()
-
             VStack(alignment: .trailing, spacing: 2) {
                 Text(transaction.amount, format: .currency(code: "USD"))
                     .font(.body.weight(.semibold))

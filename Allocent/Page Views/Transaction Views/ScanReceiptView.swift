@@ -6,10 +6,8 @@
 //
 
 import SwiftUI
-import SwiftData
 import PhotosUI
 import Vision
-import FoundationModels
 
 enum ScanState {
     case idle
@@ -19,7 +17,6 @@ enum ScanState {
 }
 
 struct ScanReceiptView: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     @State private var scanState: ScanState = .idle
@@ -112,11 +109,10 @@ struct ScanReceiptView: View {
     private var processingView: some View {
         VStack(spacing: 20) {
             Spacer()
-            ProgressView()
-                .scaleEffect(1.5)
+            ProgressView().scaleEffect(1.5)
             Text("Reading receipt...")
                 .font(.headline)
-            Text("Apple Intelligence is parsing your receipt on-device.")
+            Text("Parsing your receipt.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -138,10 +134,8 @@ struct ScanReceiptView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 32)
-            Button("Try Again") {
-                scanState = .idle
-            }
-            .buttonStyle(.borderedProminent)
+            Button("Try Again") { scanState = .idle }
+                .buttonStyle(.borderedProminent)
             Spacer()
         }
     }
@@ -162,7 +156,6 @@ struct ScanReceiptView: View {
             }
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
-
             let handler = VNImageRequestHandler(cgImage: image, options: [:])
             do {
                 try handler.perform([request])
@@ -172,31 +165,12 @@ struct ScanReceiptView: View {
         }
     }
 
-    // Parsing
+    // Parsing via Anthropic API
 
     private func parseText(_ rawText: String) async {
         scanState = .processing
         do {
-            let availability = SystemLanguageModel.default.availability
-            guard case .available = availability else {
-                scanState = .error("Apple Intelligence is not available. Please enable it in Settings > Apple Intelligence & Siri.")
-                return
-            }
-
-            let session = LanguageModelSession(instructions: """
-                You are a receipt parser. Extract transaction details from raw OCR receipt text.
-                Use the TOTAL line for amount, never subtotal.
-                Clean up merchant names (remove store numbers, LLC, etc).
-            """)
-
-            let response = try await session.respond(
-                to: "Parse this receipt: \(rawText)",
-                generating: ParsedReceipt.self
-            )
-
-            let transaction = response.content.toTransaction()
-            modelContext.insert(transaction)
-            try modelContext.save()
+            let transaction = try await ReceiptParser.parse(rawText)
             scanState = .confirming(transaction)
         } catch {
             scanState = .error(error.localizedDescription)
@@ -227,8 +201,9 @@ struct ScanReceiptView: View {
 // Confirm Transaction View
 
 struct ConfirmTransactionView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Bindable var transaction: Transaction
+    @State var transaction: Transaction
+    @State private var isSaving = false
+    @State private var errorMessage: String?
     let onConfirm: () -> Void
     let onRetry: () -> Void
 
@@ -251,16 +226,24 @@ struct ConfirmTransactionView: View {
                     }
                 }
             }
+
+            if let error = errorMessage {
+                Section {
+                    Label(error, systemImage: "exclamationmark.circle")
+                        .foregroundStyle(.red)
+                        .font(.subheadline)
+                }
+            }
+
             Section {
                 Button("Confirm & Save") {
-                    try? modelContext.save()
-                    onConfirm()
+                    Task { await save() }
                 }
                 .frame(maxWidth: .infinity)
                 .bold()
+                .disabled(isSaving)
 
                 Button("Scan Again", role: .destructive) {
-                    modelContext.delete(transaction)
                     onRetry()
                 }
                 .frame(maxWidth: .infinity)
@@ -268,5 +251,16 @@ struct ConfirmTransactionView: View {
         }
         .navigationTitle("Confirm Receipt")
         .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func save() async {
+        isSaving = true
+        do {
+            try await TransactionService.add(transaction)
+            onConfirm()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isSaving = false
     }
 }
