@@ -203,13 +203,6 @@ struct ExpensesView: View {
 
 private struct AmountField: View {
     @Binding var amountText: String
-<<<<<<< HEAD
-    var focusedField: FocusState<ExpenseFormField?>.Binding
-    var field: ExpenseFormField
-    
-=======
-
->>>>>>> main
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Amount *")
