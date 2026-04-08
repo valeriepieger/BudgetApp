@@ -33,16 +33,15 @@ final class IncomeViewModel: ObservableObject {
                     }
                     return
                 }
-                self?.errorMessage = nil
-                guard let documents = snapshot?.documents else { return }
+                guard let documents = snapshot?.documents else {
+                    DispatchQueue.main.async { self?.errorMessage = nil }
+                    return
+                }
                 
-                let formatter = DateFormatter()
-                formatter.dateFormat = "yyyy-MM-dd"
-                
-                let sources: [IncomeSource] = documents.compactMap { doc in
+                let sources: [IncomeSource] = documents.map { doc in
                     let data = doc.data()
                     let name = data["name"] as? String ?? ""
-                    let amount = data["amount"] as? Double ?? 0
+                    let amount = Self.double(fromFirestore: data["amount"])
                     var dateAdded: Date?
                     if let ts = data["dateAdded"] as? Timestamp {
                         dateAdded = ts.dateValue()
@@ -58,14 +57,22 @@ final class IncomeViewModel: ObservableObject {
                 let total = sources.reduce(0) { $0 + $1.amount }
                 
                 DispatchQueue.main.async {
+                    self?.errorMessage = nil
                     self?.incomeSources = sources.sorted { ($0.dateAdded ?? .distantPast) >= ($1.dateAdded ?? .distantPast) }
                     self?.totalMonthlyIncome = total
                 }
             }
     }
     
-    func addSource(name: String, amount: Double) async {
-        guard let uid = uid else { return }
+    /// Writes to `users/{uid}/income_sources`. Returns whether the write succeeded (listener will refresh the list).
+    @discardableResult
+    func addSource(name: String, amount: Double) async -> Bool {
+        guard let uid = uid else {
+            await MainActor.run {
+                errorMessage = "You must be signed in to add income."
+            }
+            return false
+        }
         
         let data: [String: Any] = [
             "name": name,
@@ -78,11 +85,22 @@ final class IncomeViewModel: ObservableObject {
                 .document(uid)
                 .collection("income_sources")
                 .addDocument(data: data)
+            return true
         } catch {
             await MainActor.run {
                 errorMessage = error.localizedDescription
             }
+            return false
         }
+    }
+    
+    /// Firestore often returns numeric fields as `NSNumber` or `Int`; plain `as? Double` can fail.
+    private static func double(fromFirestore value: Any?) -> Double {
+        if let d = value as? Double { return d }
+        if let n = value as? NSNumber { return n.doubleValue }
+        if let i = value as? Int { return Double(i) }
+        if let i = value as? Int64 { return Double(i) }
+        return 0
     }
     
     func deleteSource(id: String) async {

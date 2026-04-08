@@ -13,11 +13,13 @@ struct DashboardView: View {
                     Header(categoryName: "Dashboard")
                     
                     VStack {
-                        SemiCircleProgressView(
-                            safeToSpend: viewModel.safeToSpend,
-                            totalBudget: viewModel.totalBudget
+                        BudgetDonutChartView(
+                            summaries: viewModel.categorySummaries,
+                            totalBudget: viewModel.totalBudget,
+                            totalSpent: viewModel.totalSpent,
+                            safeToSpend: viewModel.safeToSpend
                         )
-                        .frame(height: 220)
+                        .frame(height: 320)
                     }
                     .frame(maxWidth: .infinity)
                     .padding()
@@ -25,7 +27,7 @@ struct DashboardView: View {
                     .cornerRadius(20)
                     .shadow(color: Color.black.opacity(0.06), radius: 8, x: 0, y: 4)
                     
-                    IncomeSummaryCard(totalBudget: viewModel.totalBudget)
+                    IncomeSummaryCard(totalMonthlyIncome: viewModel.totalMonthlyIncome)
                     
                     CategoriesSection(
                         summaries: viewModel.categorySummaries
@@ -44,7 +46,7 @@ struct DashboardView: View {
 }
 
 private struct IncomeSummaryCard: View {
-    var totalBudget: Double
+    var totalMonthlyIncome: Double
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -66,10 +68,10 @@ private struct IncomeSummaryCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             
-            Text("$\(totalBudget, specifier: "%.2f")")
+            Text("$\(totalMonthlyIncome, specifier: "%.2f")")
                 .font(.system(size: 28, weight: .bold))
             
-            Text("Based on your category limits")
+            Text("From your income sources")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -107,8 +109,8 @@ private struct CategoriesSection: View {
                     .padding(.vertical, 8)
             } else {
                 VStack(spacing: 12) {
-                    ForEach(summaries) { summary in
-                        CategorySummaryRow(summary: summary)
+                    ForEach(Array(summaries.enumerated()), id: \.element.id) { index, summary in
+                        CategorySummaryRow(summary: summary, paletteIndex: index)
                     }
                 }
             }
@@ -118,13 +120,14 @@ private struct CategoriesSection: View {
 
 private struct CategorySummaryRow: View {
     let summary: CategorySummary
-    
+    let paletteIndex: Int
+
     private var remainingText: String {
-        "$\(summary.left, default: "%.2f") left"
+        String(format: "$%.2f left", summary.left)
     }
     
     private var spentText: String {
-        "$\(summary.spent, default: "%.2f") of $\(summary.limit, default: "%.2f")"
+        String(format: "$%.2f of $%.2f", summary.spent, summary.limit)
     }
     
     private var progress: Double {
@@ -153,7 +156,7 @@ private struct CategorySummaryRow: View {
                         .frame(height: 6)
                     
                     Capsule()
-                        .fill(Color("OliveGreen"))
+                        .fill(CategoryBudgetColors.displayColor(for: summary, paletteIndex: paletteIndex))
                         .frame(width: geometry.size.width * progress, height: 6)
                 }
             }

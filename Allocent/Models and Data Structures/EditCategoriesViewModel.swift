@@ -18,7 +18,7 @@ final class EditCategoriesViewModel: ObservableObject {
     }
     
     var totalAllocated: Double {
-        categories.reduce(0) { $0 + $1.limit }
+        categories.reduce(0) { $0 + $1.effectiveLimit(monthlyIncome: totalIncome) }
     }
     
     var leftToBudget: Double {
@@ -58,8 +58,9 @@ final class EditCategoriesViewModel: ObservableObject {
                 return BudgetCategory(
                     id: doc.documentID,
                     name: data["name"] as? String ?? "",
-                    limit: data["limit"] as? Double ?? 0,
-                    colorHex: data["colorHex"] as? String
+                    limit: Self.double(fromFirestore: data["limit"]),
+                    colorHex: data["colorHex"] as? String,
+                    limitPercent: Self.optionalDouble(data["limitPercent"])
                 )
             }
             
@@ -74,20 +75,24 @@ final class EditCategoriesViewModel: ObservableObject {
         
         incomeListener = incomeRef.addSnapshotListener { [weak self] snapshot, _ in
             guard let documents = snapshot?.documents else { return }
-            let total = documents.compactMap { $0.data()["amount"] as? Double }.reduce(0, +)
+            let total = documents.reduce(0) { $0 + Self.double(fromFirestore: $1.data()["amount"]) }
             DispatchQueue.main.async {
                 self?.totalIncome = total
             }
         }
     }
     
-    func addCategory(name: String, limit: Double) async {
+    /// `limitPercent` when non-nil stores the share of income (0–100); limits then scale when income changes.
+    func addCategory(name: String, limit: Double, limitPercent: Double?) async {
         guard let uid = uid else { return }
         
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "name": name,
             "limit": limit
         ]
+        if let p = limitPercent {
+            data["limitPercent"] = p
+        }
         
         do {
             try await db.collection("users")
@@ -101,13 +106,18 @@ final class EditCategoriesViewModel: ObservableObject {
         }
     }
     
-    func updateCategory(id: String, name: String, limit: Double) async {
+    func updateCategory(id: String, name: String, limit: Double, limitPercent: Double?) async {
         guard let uid = uid else { return }
         
-        let data: [String: Any] = [
+        var data: [String: Any] = [
             "name": name,
             "limit": limit
         ]
+        if let p = limitPercent {
+            data["limitPercent"] = p
+        } else {
+            data["limitPercent"] = FieldValue.delete()
+        }
         
         do {
             try await db.collection("users")
@@ -136,5 +146,18 @@ final class EditCategoriesViewModel: ObservableObject {
                 errorMessage = error.localizedDescription
             }
         }
+    }
+    
+    private static func double(fromFirestore value: Any?) -> Double {
+        if let d = value as? Double { return d }
+        if let n = value as? NSNumber { return n.doubleValue }
+        if let i = value as? Int { return Double(i) }
+        if let i = value as? Int64 { return Double(i) }
+        return 0
+    }
+    
+    private static func optionalDouble(_ value: Any?) -> Double? {
+        guard let value, !(value is NSNull) else { return nil }
+        return double(fromFirestore: value)
     }
 }

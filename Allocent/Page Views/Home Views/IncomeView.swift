@@ -121,16 +121,30 @@ struct IncomeView: View {
 private struct AddIncomeSheet: View {
     @ObservedObject var viewModel: IncomeViewModel
     @Binding var isPresented: Bool
+    @FocusState private var focusedField: Field?
     @State private var name = ""
     @State private var amountText = ""
     @State private var isSaving = false
+    @State private var saveError: String?
+    
+    private enum Field: Hashable {
+        case name, amount
+    }
     
     private var amount: Double {
-        Double(amountText) ?? 0
+        parseAmount(amountText) ?? 0
     }
     
     private var isValid: Bool {
         !name.trimmingCharacters(in: .whitespaces).isEmpty && amount > 0
+    }
+    
+    /// Accepts `12.34` and locale-style `12,34`.
+    private func parseAmount(_ text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        let normalized = trimmed.replacingOccurrences(of: ",", with: ".")
+        return Double(normalized)
     }
     
     var body: some View {
@@ -144,7 +158,8 @@ private struct AddIncomeSheet: View {
                             .foregroundStyle(.secondary)
                         TextField("e.g. Salary", text: $name)
                             .textFieldStyle(.roundedBorder)
-                            .autocapitalization(.words)
+                            .textInputAutocapitalization(.words)
+                            .focused($focusedField, equals: .name)
                     }
                     
                     VStack(alignment: .leading, spacing: 8) {
@@ -156,7 +171,15 @@ private struct AddIncomeSheet: View {
                             TextField("0.00", text: $amountText)
                                 .keyboardType(.decimalPad)
                                 .textFieldStyle(.roundedBorder)
+                                .focused($focusedField, equals: .amount)
                         }
+                    }
+                    
+                    if let saveError, !saveError.isEmpty {
+                        Text(saveError)
+                            .font(.footnote)
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     
                     Spacer()
@@ -178,17 +201,27 @@ private struct AddIncomeSheet: View {
                     .disabled(!isValid || isSaving)
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
         }
     }
     
     private func save() {
         guard isValid else { return }
         isSaving = true
+        saveError = nil
+        focusedField = nil
         Task {
-            await viewModel.addSource(name: name.trimmingCharacters(in: .whitespaces), amount: amount)
+            let ok = await viewModel.addSource(
+                name: name.trimmingCharacters(in: .whitespaces),
+                amount: amount
+            )
             await MainActor.run {
                 isSaving = false
-                isPresented = false
+                if ok {
+                    isPresented = false
+                } else {
+                    saveError = viewModel.errorMessage ?? "Couldn’t save this income source."
+                }
             }
         }
     }

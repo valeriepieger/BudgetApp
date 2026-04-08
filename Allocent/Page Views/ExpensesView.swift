@@ -2,7 +2,21 @@ import SwiftUI
 import FirebaseFirestore
 import FirebaseAuth
 
+private func optionalFirestoreDouble(_ value: Any?) -> Double? {
+    guard let v = value, !(v is NSNull) else { return nil }
+    if let d = v as? Double { return d }
+    if let n = v as? NSNumber { return n.doubleValue }
+    if let i = v as? Int { return Double(i) }
+    if let i = v as? Int64 { return Double(i) }
+    return nil
+}
+
+private enum ExpenseFormField: Hashable {
+    case amount, note
+}
+
 struct ExpensesView: View {
+    @FocusState private var focusedField: ExpenseFormField?
     @State private var amountText: String = ""
     @State private var selectedCategory: BudgetCategory?
     @State private var selectedDate: Date = Date()
@@ -62,13 +76,21 @@ struct ExpensesView: View {
                     .padding(.horizontal)
 
                     VStack(spacing: 20) {
-                        AmountField(amountText: $amountText)
+                        AmountField(
+                            amountText: $amountText,
+                            focusedField: $focusedField,
+                            field: .amount
+                        )
                         CategoryPicker(
                             categories: categories,
                             selectedCategory: $selectedCategory
                         )
                         DateField(selectedDate: $selectedDate)
-                        NoteField(note: $note)
+                        NoteField(
+                            note: $note,
+                            focusedField: $focusedField,
+                            field: .note
+                        )
                     }
                     .padding(.horizontal)
 
@@ -99,6 +121,7 @@ struct ExpensesView: View {
                 }
                 .padding(.top, 8)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .onAppear(perform: loadCategories)
         .sheet(isPresented: $showScanReceipt) {
@@ -127,14 +150,19 @@ struct ExpensesView: View {
                         id: doc.documentID,
                         name: data["name"] as? String ?? "",
                         limit: data["limit"] as? Double ?? 0,
-                        colorHex: data["colorHex"] as? String
+                        colorHex: data["colorHex"] as? String,
+                        limitPercent: optionalFirestoreDouble(data["limitPercent"])
                     )
                 }
 
                 DispatchQueue.main.async {
                     categories = fetched
-                    if selectedCategory == nil {
-                        selectedCategory = fetched.first
+                    if let current = selectedCategory,
+                       let match = fetched.first(where: { $0.id == current.id }) {
+                        selectedCategory = match
+                    } else if selectedCategory != nil,
+                              fetched.first(where: { $0.id == selectedCategory?.id }) == nil {
+                        selectedCategory = nil
                     }
                 }
             }
@@ -147,7 +175,7 @@ struct ExpensesView: View {
 
         isSaving = true
         errorMessage = nil
-
+        focusedField = nil
         Task {
             do {
                 try await ExpenseService.addExpense(
@@ -160,11 +188,13 @@ struct ExpensesView: View {
                     amountText = ""
                     note = ""
                     selectedDate = Date()
+                    focusedField = nil
                     isSaving = false
                 }
             } catch {
                 await MainActor.run {
                     errorMessage = error.localizedDescription
+                    focusedField = nil
                     isSaving = false
                 }
             }
@@ -174,6 +204,8 @@ struct ExpensesView: View {
 
 private struct AmountField: View {
     @Binding var amountText: String
+    var focusedField: FocusState<ExpenseFormField?>.Binding
+    var field: ExpenseFormField
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -185,6 +217,7 @@ private struct AmountField: View {
                     .foregroundStyle(.secondary)
                 TextField("0.00", text: $amountText)
                     .keyboardType(.decimalPad)
+                    .focused(focusedField, equals: field)
             }
             .padding()
             .background(Color("CardBackground"))
@@ -198,30 +231,74 @@ private struct CategoryPicker: View {
     var categories: [BudgetCategory]
     @Binding var selectedCategory: BudgetCategory?
 
+    private func rowLabel(for category: BudgetCategory) -> String {
+        let base = category.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if base.isEmpty {
+            return "Unnamed category"
+        }
+        return base
+    }
+
+    private var selectionTitle: String {
+        guard let c = selectedCategory else { return "Select a category" }
+        return rowLabel(for: c)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Category *")
                 .font(.subheadline)
 
-            Menu {
-                ForEach(categories) { category in
-                    Button(category.name) {
-                        selectedCategory = category
+            HStack {
+                Menu {
+                    Button {
+                        selectedCategory = nil
+                    } label: {
+                        HStack {
+                            Text("Select a category")
+                            Spacer()
+                            if selectedCategory == nil {
+                                Image(systemName: "checkmark")
+                            }
+                        }
                     }
+                    Divider()
+                    ForEach(categories) { category in
+                        Button {
+                            selectedCategory = category
+                        } label: {
+                            HStack {
+                                Text(rowLabel(for: category))
+                                Spacer()
+                                if selectedCategory?.id == category.id {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(alignment: .center, spacing: 12) {
+                        Text(selectionTitle)
+                            .font(.body)
+                            .foregroundStyle(selectedCategory == nil ? Color.gray : Color.primary)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .fixedSize()
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
-            } label: {
-                HStack {
-                    Text(selectedCategory?.name ?? "Select a category")
-                        .foregroundStyle(selectedCategory == nil ? .secondary : .primary)
-                    Spacer()
-                    Image(systemName: "chevron.down")
-                        .foregroundStyle(.secondary)
-                }
-                .padding()
-                .background(Color("CardBackground"))
-                .cornerRadius(12)
-                .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
+                .menuActionDismissBehavior(.automatic)
             }
+            .padding()
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Color("CardBackground"))
+            .cornerRadius(12)
+            .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
     }
 }
@@ -251,6 +328,8 @@ private struct DateField: View {
 
 private struct NoteField: View {
     @Binding var note: String
+    var focusedField: FocusState<ExpenseFormField?>.Binding
+    var field: ExpenseFormField
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -258,6 +337,7 @@ private struct NoteField: View {
                 .font(.subheadline)
 
             TextField("e.g., Lunch with friends", text: $note, axis: .vertical)
+                .focused(focusedField, equals: field)
                 .lineLimit(1...3)
                 .padding()
                 .background(Color("CardBackground"))
