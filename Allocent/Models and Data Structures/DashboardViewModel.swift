@@ -81,14 +81,15 @@ final class DashboardViewModel: ObservableObject {
                 totalMonthlyIncome += Self.double(fromFirestore: doc.data()["amount"])
             }
         }
-        
+
         guard let catSnap = lastCategoriesSnapshot else {
             DispatchQueue.main.async {
                 self.totalMonthlyIncome = totalMonthlyIncome
+                self.safeToSpend = max(totalMonthlyIncome, 0)
             }
             return
         }
-        
+
         var categories: [String: BudgetCategory] = [:]
         for doc in catSnap.documents {
             let data = doc.data()
@@ -132,12 +133,21 @@ final class DashboardViewModel: ObservableObject {
             totalSpent += spent
         }
         
+        let safeToSpend: Double
+        if totalBudget > 0 {
+            // Allocated category budgets: remaining pool is total caps minus spend in those categories.
+            safeToSpend = max(totalBudget - totalSpent, 0)
+        } else {
+            // No category limits yet — show full monthly income as safe to spend.
+            safeToSpend = max(totalMonthlyIncome, 0)
+        }
+
         DispatchQueue.main.async {
             self.categorySummaries = summaries.sorted { $0.name < $1.name }
             self.totalBudget = totalBudget
             self.totalMonthlyIncome = totalMonthlyIncome
             self.totalSpent = totalSpent
-            self.safeToSpend = max(totalBudget - totalSpent, 0)
+            self.safeToSpend = safeToSpend
         }
     }
     
