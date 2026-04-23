@@ -17,11 +17,11 @@ import SwiftUI
 struct EmailPreferencesView: View {
     @Environment(\.dismiss) var dismiss
 
-    @State private var weeklyDigest = true
-    @State private var budgetAlerts = true
-    @State private var savingsGoals = true
+    @State private var weeklyDigest = false
+    @AppStorage("budgetAlerts") var budgetAlerts: Bool = false
+    @State private var savingsGoals = false
     @State private var billReminders = false
-    @State private var tipsAdvice = true
+    @State private var tipsAdvice = false
     @State private var productUpdates = false
     @State private var marketingEmails = false
     

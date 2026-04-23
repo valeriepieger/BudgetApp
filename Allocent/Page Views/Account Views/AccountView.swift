@@ -48,14 +48,37 @@ struct AccountView: View {
                 //Name and email
 
                 HStack(spacing: 16) {
-                    Circle()
-                        .fill(Color("OliveGreen").opacity(0.3))
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            Image(systemName: "person")
-                                .foregroundStyle(Color("OliveGreen"))
-                                .font(.system(size: 24, weight: .bold))
-                        )
+                   if let urlString = currentUser?.profileImageURL,
+                              let url = URL(string: urlString) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(Circle())
+                            default:
+                                Circle()
+                                    .fill(Color("OliveGreen").opacity(0.3))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "person")
+                                            .foregroundStyle(Color("OliveGreen"))
+                                            .font(.system(size: 24, weight: .bold))
+                                    )
+                            }
+                        }
+                    } else {
+                        Circle()
+                            .fill(Color("OliveGreen").opacity(0.3))
+                            .frame(width: 60, height: 60)
+                            .overlay(
+                                Image(systemName: "person")
+                                    .foregroundStyle(Color("OliveGreen"))
+                                    .font(.system(size: 24, weight: .bold))
+                            )
+                    }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(displayName)
@@ -189,7 +212,8 @@ struct AccountView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .active {
-                Task { await syncNotificationStatus() }
+                Task { await syncNotificationStatus()
+                    await session.refreshUser()}
             }
         }
     }

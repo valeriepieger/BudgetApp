@@ -184,6 +184,10 @@ struct ExpensesView: View {
                     date: selectedDate,
                     note: note.isEmpty ? nil : note
                 )
+                if let email = Auth.auth().currentUser?.email {
+                    await checkAndSendBudgetAlert(category: category, userEmail: email)
+                }
+                
                 await MainActor.run {
                     amountText = ""
                     note = ""
@@ -348,6 +352,68 @@ private struct NoteField: View {
                 .shadow(color: Color.black.opacity(0.05), radius: 4, x: 0, y: 2)
         }
     }
+}
+
+func checkAndSendBudgetAlert(category: BudgetCategory, userEmail: String) async {
+    @AppStorage("budgetAlerts") var budgetAlerts: Bool = false
+    print("checking budget alerts")
+    guard budgetAlerts else { return }
+    do {
+        let totalSpent = try await getTotalSpent(for: category.id)
+        let limit = category.limit
+        
+        guard limit > 0 else { return }
+        
+        let percentUsed = totalSpent / limit
+        
+        //trigger at 90%
+        print("checking trigger for 90%")
+        if percentUsed >= 0.9 && percentUsed < 1.0 {
+            try? await EmailService.shared.sendEmail(
+                to: "valeriepieger4@gmail.com",
+                subject: "Budget Alert",
+                message: """
+                You're at \(Int(percentUsed * 100))% of your \(category.name) budget.
+                Limit: $\(limit)
+                Spent: $\(totalSpent)
+                """
+            )
+        }
+        
+        //over-budget alert
+        if percentUsed >= 1.0 {
+            try? await EmailService.shared.sendEmail(
+                to: "valeriepieger4@gmail.com",
+                subject: "Over Budget",
+                message: """
+                You've exceeded your \(category.name) budget.
+                Limit: $\(limit)
+                Spent: $\(totalSpent)
+                """
+            )
+        }
+        
+    } catch {
+        print("Error checking budget:", error)
+    }
+}
+
+func getTotalSpent(for categoryId: String) async throws -> Double {
+    guard let uid = Auth.auth().currentUser?.uid else { return 0 }
+    
+    let db = Firestore.firestore()
+    let snapshot = try await db.collection("users")
+        .document(uid)
+        .collection("expenses")
+        .whereField("categoryId", isEqualTo: categoryId)
+        .getDocuments()
+    
+    let total = snapshot.documents.reduce(0.0) { sum, doc in
+        let data = doc.data()
+        return sum + (data["amount"] as? Double ?? 0)
+    }
+    
+    return total
 }
 
 #Preview {

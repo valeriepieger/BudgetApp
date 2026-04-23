@@ -7,24 +7,28 @@
 
 import Foundation
 import FirebaseFirestore
+import FirebaseStorage
 
 final class UserService {
 
     private let db = Firestore.firestore()
+    private let storage = Storage.storage()
 
     func createUserDoc(user: AppUser) async throws {
-        try await db.collection("users").document(user.id).setData([
+        var data: [String: Any] = [
             "firstName": user.firstName,
             "lastName": user.lastName,
             "email": user.email,
             "phoneNumber": user.phoneNumber,
             "bio": user.bio,
-
             "createdAt": Timestamp(date: user.createdAt),
             "needsOnboarding": user.needsOnboarding,
-
             "linked": user.linked
-        ])
+        ]
+        if let url = user.profileImageURL {
+            data["profileImageURL"] = url
+        }
+        try await db.collection("users").document(user.id).setData(data)
     }
 
     func fetchUser(uid: String) async throws -> AppUser {
@@ -48,6 +52,8 @@ final class UserService {
 
         let linked = data["linked"] as? Bool ?? false
 
+        let profileImageURL = data["profileImageURL"] as? String
+
         return AppUser(
             id: uid,
             firstName: firstName,
@@ -57,8 +63,8 @@ final class UserService {
             bio: bio,
             createdAt: createdAt,
             needsOnboarding: needsOnboarding,
-            linked: linked,
-//            lastSyncAt: lastSyncAt
+            profileImageURL: profileImageURL,
+            linked: linked
         )
     }
 
@@ -67,14 +73,45 @@ final class UserService {
                        lastName: String,
                        email: String,
                        phoneNumber: String,
-                       bio: String) async throws {
-        try await db.collection("users").document(uid).setData([
+                       bio: String,
+                       profileImageURL: String? = nil) async throws {
+        var data: [String: Any] = [
             "firstName": firstName,
             "lastName": lastName,
             "email": email,
             "phoneNumber": phoneNumber,
             "bio": bio
-        ], merge: true)
+        ]
+        if let url = profileImageURL {
+            data["profileImageURL"] = url
+        }
+        try await db.collection("users").document(uid).setData(data, merge: true)
+    }
+
+    func uploadProfileImage(uid: String, imageData: Data) async throws -> String {
+        let ref = storage.reference().child("profile_images/\(uid).jpg")
+        let metadata = StorageMetadata()
+        metadata.contentType = "image/jpeg"
+        _ = try await ref.putData(imageData, metadata: metadata)
+
+        // Retry downloadURL — Storage may need a moment to index the new file
+        var lastError: Error?
+        for attempt in 0..<3 {
+            do {
+                if attempt > 0 {
+                    try await Task.sleep(for: .seconds(1))
+                }
+                let url = try await ref.downloadURL()
+                // Cache-bust so AsyncImage reloads the updated image
+                return url.absoluteString + "&v=\(Int(Date().timeIntervalSince1970))"
+            } catch {
+                lastError = error
+            }
+        }
+        throw lastError ?? NSError(
+            domain: "UserService", code: 0,
+            userInfo: [NSLocalizedDescriptionKey: "Failed to get download URL after upload."]
+        )
     }
 
     func setNeedsOnboarding(uid: String, value: Bool) async throws {

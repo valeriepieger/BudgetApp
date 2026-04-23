@@ -156,6 +156,7 @@ private struct OnboardingBullet: View {
             bio: "",
             createdAt: Date(),
             needsOnboarding: true,
+            profileImageURL: nil,
             linked: false
         )
     )
