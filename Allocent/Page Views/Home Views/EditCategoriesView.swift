@@ -17,6 +17,8 @@ struct EditCategoriesView: View {
     @StateObject private var viewModel = EditCategoriesViewModel()
     @State private var hasAppeared = false
     @State private var showAddCategory = false
+    @State private var showAllocationAlert = false
+    @State private var allocationAlertMessage = ""
     @AppStorage("allocent.categories.usePercentage") private var usePercentageAllocation = false
     
     var body: some View {
@@ -102,6 +104,11 @@ struct EditCategoriesView: View {
                                         totalIncome: viewModel.totalIncome,
                                         usePercentageAllocation: usePercentageAllocation,
                                         onSave: { name, limit, limitPercent in
+                                            guard viewModel.canApplyAllocation(limit: limit, replacingCategoryID: category.id) else {
+                                                allocationAlertMessage = viewModel.overAllocationMessage(limit: limit, replacingCategoryID: category.id)
+                                                showAllocationAlert = true
+                                                return
+                                            }
                                             Task {
                                                 await viewModel.updateCategory(
                                                     id: category.id,
@@ -125,6 +132,11 @@ struct EditCategoriesView: View {
         }
         .sheet(isPresented: $showAddCategory) {
             AddCategorySheet(viewModel: viewModel, isPresented: $showAddCategory)
+        }
+        .alert("Allocation Limit Reached", isPresented: $showAllocationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(allocationAlertMessage)
         }
         .onAppear {
             guard !hasAppeared else { return }
@@ -315,6 +327,8 @@ private struct AddCategorySheet: View {
     @State private var name = ""
     @State private var limitText = ""
     @State private var isSaving = false
+    @State private var showAllocationAlert = false
+    @State private var allocationAlertMessage = ""
     
     private var dollarLimitForSave: Double? {
         let raw = parseCategoryNumeric(limitText) ?? 0
@@ -403,10 +417,20 @@ private struct AddCategorySheet: View {
                 }
             }
         }
+        .alert("Allocation Limit Reached", isPresented: $showAllocationAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(allocationAlertMessage)
+        }
     }
     
     private func save() {
         guard let limit = dollarLimitForSave else { return }
+        guard viewModel.canApplyAllocation(limit: limit) else {
+            allocationAlertMessage = viewModel.overAllocationMessage(limit: limit)
+            showAllocationAlert = true
+            return
+        }
         let raw = parseCategoryNumeric(limitText) ?? 0
         let storedPercent: Double? = usePercentageAllocation ? raw : nil
         isSaving = true

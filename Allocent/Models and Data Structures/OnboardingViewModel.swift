@@ -18,8 +18,8 @@ final class OnboardingViewModel: ObservableObject {
     enum Step: Int, CaseIterable {
         case welcome = 0
         case income = 1
-        case bankLink = 2
-        case budgetCategories = 3
+        case budgetCategories = 2
+        case bankLink = 3
         case completion = 4
     }
 
@@ -54,6 +54,18 @@ final class OnboardingViewModel: ObservableObject {
 
     @Published var isSaving: Bool = false
     @Published var errorMessage: String?
+
+    struct PlaidSessionLink: Identifiable {
+        let id: String
+        let institution: String?
+    }
+
+    /// Plaid items linked during this onboarding session (for UI only until Firestore `plaidConnections` exists).
+    @Published private(set) var plaidLinksThisSession: [PlaidSessionLink] = []
+
+    func registerPlaidLink(itemId: String, institution: String?) {
+        plaidLinksThisSession.append(PlaidSessionLink(id: itemId, institution: institution))
+    }
 
 
     struct DraftIncome: Identifiable {
@@ -149,6 +161,10 @@ final class OnboardingViewModel: ObservableObject {
             }
 
             try await batch.commit()
+
+            let monthKey = ExpenseCategoryAllocationService.currentMonthKey()
+            try await ExpenseCategoryAllocationService.allocateCategoryIdsForMonth(monthKey)
+
             isSaving = false
         } catch {
             isSaving = false
