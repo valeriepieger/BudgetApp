@@ -30,6 +30,25 @@ final class EditCategoriesViewModel: ObservableObject {
         let pct = (totalAllocated / totalIncome) * 100
         return String(format: "%.0f%% of 100%% allocated", min(pct, 100))
     }
+
+    func canApplyAllocation(limit: Double, replacingCategoryID: String? = nil) -> Bool {
+        guard totalIncome > 0 else { return limit == 0 && categories.allSatisfy { $0.effectiveLimit(monthlyIncome: totalIncome) == 0 } }
+        let projected = projectedTotalAllocated(with: limit, replacingCategoryID: replacingCategoryID)
+        return projected <= totalIncome
+    }
+
+    func overAllocationMessage(limit: Double, replacingCategoryID: String? = nil) -> String {
+        guard totalIncome > 0 else {
+            return "Your total income is $0. Add income first, or set all category limits to $0."
+        }
+
+        let projected = projectedTotalAllocated(with: limit, replacingCategoryID: replacingCategoryID)
+        let projectedPercent = (projected / totalIncome) * 100
+        return String(
+            format: "That would allocate %.0f%% of your income. Please adjust your category limits so the total is 100%% or less.",
+            projectedPercent
+        )
+    }
     
     deinit {
         categoriesListener?.remove()
@@ -159,5 +178,18 @@ final class EditCategoriesViewModel: ObservableObject {
     private static func optionalDouble(_ value: Any?) -> Double? {
         guard let value, !(value is NSNull) else { return nil }
         return double(fromFirestore: value)
+    }
+
+    private func projectedTotalAllocated(with limit: Double, replacingCategoryID: String?) -> Double {
+        guard let replacingCategoryID else {
+            return totalAllocated + limit
+        }
+
+        guard let existing = categories.first(where: { $0.id == replacingCategoryID }) else {
+            return totalAllocated + limit
+        }
+
+        let current = existing.effectiveLimit(monthlyIncome: totalIncome)
+        return max(totalAllocated - current, 0) + limit
     }
 }

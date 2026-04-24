@@ -82,6 +82,7 @@ final class SessionViewModel: ObservableObject {
                 bio: bio,
                 createdAt: Date(),
                 needsOnboarding: true,
+                profileImageURL: nil,
                 linked: false
             )
 
@@ -112,6 +113,49 @@ final class SessionViewModel: ObservableObject {
         }
     }
 
+    // Handles Google Sign-In (creates user doc if new)
+    func signInWithGoogle() async {
+        do {
+            let result = try await auth.signInWithGoogle()
+
+            if result.isNewUser {
+                // Split display name into first/last
+                let parts = result.fullName.split(separator: " ", maxSplits: 1)
+                let firstName = String(parts.first ?? "")
+                let lastName = parts.count > 1 ? String(parts[1]) : ""
+
+                let newUser = AppUser(
+                    id: result.uid,
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: result.email,
+                    phoneNumber: "",
+                    bio: "",
+                    createdAt: Date(),
+                    needsOnboarding: true,
+                    profileImageURL: nil,
+                    linked: false
+                )
+                try await users.createUserDoc(user: newUser)
+                state = .onboarding(newUser)
+            } else {
+                let user = try await users.fetchUser(uid: result.uid)
+                if user.needsOnboarding {
+                    state = .onboarding(user)
+                } else {
+                    state = .active(user)
+                }
+            }
+        } catch {
+            // User cancelled the Google sign-in sheet — don't show an error
+            let nsError = error as NSError
+            if nsError.domain == "com.google.GIDSignIn" && nsError.code == -5 {
+                return
+            }
+            state = .error(error.localizedDescription)
+        }
+    }
+
     // Marks onboarding as complete
     func completeOnboarding() async {
         guard let uid = auth.currentUID() else {
@@ -123,6 +167,21 @@ final class SessionViewModel: ObservableObject {
             try await users.setNeedsOnboarding(uid: uid, value: false)
             let refreshed = try await users.fetchUser(uid: uid)
             state = .active(refreshed)
+        } catch {
+            state = .error(error.localizedDescription)
+        }
+    }
+
+    // Refreshes the current user data from Firestore
+    func refreshUser() async {
+        guard let uid = auth.currentUID() else { return }
+        do {
+            let user = try await users.fetchUser(uid: uid)
+            if user.needsOnboarding {
+                state = .onboarding(user)
+            } else {
+                state = .active(user)
+            }
         } catch {
             state = .error(error.localizedDescription)
         }

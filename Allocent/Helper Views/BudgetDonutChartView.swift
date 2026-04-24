@@ -104,15 +104,15 @@ struct BudgetDonutChartView: View {
             VStack(spacing: 4) {
                 Text("Safe to spend")
                     .font(.subheadline)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.secondary)
                 Text(formatCurrencyTwoDecimals(safeToSpend))
                     .font(.system(size: 34, weight: .bold))
-                    .foregroundColor(.black)
+                    .foregroundStyle(.primary)
                     .minimumScaleFactor(0.85)
                     .lineLimit(1)
                 Text("as of \(asOfDateLabel)")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundStyle(.tertiary)
             }
             .padding(.horizontal, 20)
             .multilineTextAlignment(.center)

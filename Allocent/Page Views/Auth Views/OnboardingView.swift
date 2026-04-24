@@ -33,6 +33,8 @@ struct OnboardingView: View {
                         welcomeStep
                     case .income:
                         OnboardingIncomeStep()
+                    case .budgetCategories:
+                        OnboardingBudgetStep()
                     case .bankLink:
                         OnboardingBankLinkStep()
                     case .categorySelection:
@@ -78,14 +80,14 @@ struct OnboardingView: View {
                         subtitle: "Tell us how much you earn each month"
                     )
                     OnboardingBullet(
-                        icon: "building.columns.fill",
-                        title: "Link your bank",
-                        subtitle: "Optionally connect accounts to track spending"
+                        icon: "chart.pie.fill",
+                        title: "Set category limits",
+                        subtitle: "Allocate your income across spending categories"
                     )
                     OnboardingBullet(
-                        icon: "checkmark.circle.fill",
-                        title: "Start tracking",
-                        subtitle: "You're ready to take control of your finances"
+                        icon: "building.columns.fill",
+                        title: "Link your bank",
+                        subtitle: "Optionally connect Plaid to import this month’s spending"
                     )
                 }
             }
@@ -158,6 +160,7 @@ private struct OnboardingBullet: View {
             bio: "",
             createdAt: Date(),
             needsOnboarding: true,
+            profileImageURL: nil,
             linked: false
         )
     )

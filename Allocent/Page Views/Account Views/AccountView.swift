@@ -6,12 +6,14 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct AccountView: View {
     @EnvironmentObject var session: SessionViewModel
     @State private var pushNotifications = false
     @State private var budgetAlerts = false
     @AppStorage("isDarkMode") private var darkMode = false
+    @Environment(\.scenePhase) private var scenePhase
     
     //get the user info to display
     private var currentUser: AppUser? {
@@ -46,14 +48,37 @@ struct AccountView: View {
                 //Name and email
 
                 HStack(spacing: 16) {
-                    Circle()
-                        .fill(Color("OliveGreen").opacity(0.3))
-                        .frame(width: 60, height: 60)
-                        .overlay(
-                            Image(systemName: "person")
-                                .foregroundStyle(Color("OliveGreen"))
-                                .font(.system(size: 24, weight: .bold))
-                        )
+                   if let urlString = currentUser?.profileImageURL,
+                              let url = URL(string: urlString) {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 60, height: 60)
+                                    .clipShape(Circle())
+                            default:
+                                Circle()
+                                    .fill(Color("OliveGreen").opacity(0.3))
+                                    .frame(width: 60, height: 60)
+                                    .overlay(
+                                        Image(systemName: "person")
+                                            .foregroundStyle(Color("OliveGreen"))
+                                            .font(.system(size: 24, weight: .bold))
+                                    )
+                            }
+                        }
+                    } else {
+                        Circle()
+                            .fill(Color("OliveGreen").opacity(0.3))
+                            .frame(width: 60, height: 60)
+                            .overlay(
+                                Image(systemName: "person")
+                                    .foregroundStyle(Color("OliveGreen"))
+                                    .font(.system(size: 24, weight: .bold))
+                            )
+                    }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(displayName)
@@ -177,6 +202,49 @@ struct AccountView: View {
         }
         .onChange(of: darkMode) { _, newValue in
             applyTheme(darkMode: newValue)
+        }
+        .onChange(of: pushNotifications) { oldValue, newValue in
+            guard newValue != oldValue else { return }
+            handleNotificationToggle(newValue)
+        }
+        .task {
+            await syncNotificationStatus()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await syncNotificationStatus()
+                    await session.refreshUser()}
+            }
+        }
+    }
+
+    private func syncNotificationStatus() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        let isAuthorized = settings.authorizationStatus == .authorized
+        if pushNotifications != isAuthorized {
+            pushNotifications = isAuthorized
+        }
+    }
+
+    private func handleNotificationToggle(_ isOn: Bool) {
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let status = await center.notificationSettings().authorizationStatus
+
+            if isOn {
+                if status == .notDetermined {
+                    let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+                    if !granted {
+                        pushNotifications = false
+                    }
+                } else if status == .denied {
+                    // Permission was previously denied — open Settings
+                    pushNotifications = false
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        await UIApplication.shared.open(url)
+                    }
+                }
+            }
         }
     }
 

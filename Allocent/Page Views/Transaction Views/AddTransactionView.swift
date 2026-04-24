@@ -110,7 +110,7 @@ struct CategoryChip: View {
     var body: some View {
         Button(action: onTap) {
             HStack(spacing: 6) {
-                Text(category.emoji)
+                Image(systemName: category.iconName)
                 Text(category.rawValue)
                     .font(.caption)
                     .lineLimit(1)

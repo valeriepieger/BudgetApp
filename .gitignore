@@ -21,3 +21,4 @@ Pods/
 
 # Logs
 *.log
+Secrets.swift

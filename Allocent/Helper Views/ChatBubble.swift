@@ -2,6 +2,16 @@ import SwiftUI
 
 struct ChatBubble: View {
     let message: ChatMessage
+    @EnvironmentObject var session: SessionViewModel
+    
+    private var currentUser: AppUser? {
+        switch session.state {
+        case .active(let user), .onboarding(let user):
+            return user
+        default:
+            return nil
+        }
+    }
 
     private var isUser: Bool {
         message.role == .user
@@ -57,6 +67,39 @@ struct ChatBubble: View {
                     )
 
                 if !isUser { Spacer(minLength: 60) }
+                if isUser {
+                    if let urlString = currentUser?.profileImageURL,
+                               let url = URL(string: urlString) {
+                         AsyncImage(url: url) { phase in
+                             switch phase {
+                             case .success(let image):
+                                 image
+                                     .resizable()
+                                     .scaledToFill()
+                                     .frame(width: 28, height: 28)
+                                     .clipShape(Circle())
+                             default:
+                                 Circle()
+                                     .fill(Color("OliveGreen").opacity(0.3))
+                                     .frame(width: 28, height: 28)
+                                     .overlay(
+                                         Image(systemName: "person")
+                                             .foregroundStyle(Color("OliveGreen"))
+                                             .font(.system(size: 12, weight: .bold))
+                                     )
+                             }
+                         }
+                     } else {
+                         Circle()
+                             .fill(Color("OliveGreen").opacity(0.3))
+                             .frame(width: 24, height: 24)
+                             .overlay(
+                                 Image(systemName: "person")
+                                     .foregroundStyle(Color("OliveGreen"))
+                                     .font(.system(size: 12, weight: .bold))
+                             )
+                     }
+                }
             }
             .padding(.horizontal)
         }
@@ -65,9 +108,9 @@ struct ChatBubble: View {
 
 #Preview {
     VStack(spacing: 12) {
-        ChatBubble(message: ChatMessage(role: .assistant, content: "Hi! I'm your budget advisor."))
-        ChatBubble(message: ChatMessage(role: .user, content: "How am I doing this month?"))
-        ChatBubble(message: ChatMessage(role: .system, content: "Session reset."))
+        ChatBubble(message: ChatMessage(role: .assistant, content: "Hi! I'm your budget advisor.")).environmentObject(SessionViewModel())
+        ChatBubble(message: ChatMessage(role: .user, content: "How am I doing this month?")).environmentObject(SessionViewModel())
+        ChatBubble(message: ChatMessage(role: .system, content: "Session reset.")).environmentObject(SessionViewModel())
     }
     .padding(.vertical)
     .background(Color("Background"))

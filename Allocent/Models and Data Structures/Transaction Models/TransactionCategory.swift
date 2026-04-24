@@ -18,16 +18,16 @@ enum TransactionCategory: String, Codable, CaseIterable {
     case utilities = "Utilities"
     case other = "Other"
 
-    var emoji: String {
+    var iconName: String {
         switch self {
-        case .food: return "🍔"
-        case .transport: return "🚗"
-        case .groceries: return "🛒"
-        case .shopping: return "🛍️"
-        case .entertainment: return "🎬"
-        case .health: return "💊"
-        case .utilities: return "💡"
-        case .other: return "📦"
+        case .food: return "fork.knife"
+        case .transport: return "car.fill"
+        case .groceries: return "cart.fill"
+        case .shopping: return "bag.fill"
+        case .entertainment: return "film.fill"
+        case .health: return "heart.fill"
+        case .utilities: return "bolt.fill"
+        case .other: return "ellipsis.circle.fill"
         }
     }
 

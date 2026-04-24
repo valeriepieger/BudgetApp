@@ -236,8 +236,9 @@ struct TransactionRow: View {
                 Circle()
                     .fill(Color(.secondarySystemGroupedBackground))
                     .frame(width: 44, height: 44)
-                Text(transaction.category.emoji)
+                Image(systemName: transaction.category.iconName)
                     .font(.title3)
+                    .foregroundStyle(.secondary)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(transaction.merchant)

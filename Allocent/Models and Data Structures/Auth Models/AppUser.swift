@@ -21,6 +21,8 @@ struct AppUser: Identifiable, Codable, Equatable {
     var needsOnboarding: Bool
 
     
+    var profileImageURL: String?
+
     // bank api integration goes here
     var linked: Bool
     // last synced?
