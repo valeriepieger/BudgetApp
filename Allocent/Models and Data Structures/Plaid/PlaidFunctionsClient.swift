@@ -67,19 +67,12 @@ enum PlaidFunctionsClient {
         }
 
         do {
-            return try await performCall(name, data, forceRefreshToken: false)
+            // Always force-refresh once before Plaid callables.
+            // This avoids stale-token edge cases without issuing duplicate requests.
+            return try await performCall(name, data, forceRefreshToken: true)
         } catch {
-            if shouldRetryAfterAuthRefresh(error) {
-                return try await performCall(name, data, forceRefreshToken: true)
-            }
             throw mapFunctionsErrorIfNeeded(error)
         }
-    }
-
-    private static func shouldRetryAfterAuthRefresh(_ error: Error) -> Bool {
-        let ns = error as NSError
-        guard ns.domain == FunctionsErrorDomain else { return false }
-        return ns.code == FunctionsErrorCode.unauthenticated.rawValue
     }
 
     private static func mapFunctionsErrorIfNeeded(_ error: Error) -> Error {
@@ -90,12 +83,13 @@ enum PlaidFunctionsClient {
 
         let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
         let firebaseProject = FirebaseApp.app()?.options.projectID ?? "(unknown)"
+        let uid = Auth.auth().currentUser?.uid ?? "(nil)"
         let message = """
         Cloud Functions rejected your login (UNAUTHENTICATED). Most often:
         • GoogleService-Info.plist must be from the same Firebase project as your deployed functions (e.g. budgetapp-66eff). This app’s Firebase project id is: \(firebaseProject).
         • After fixing the plist, delete the app from the device and reinstall.
         • Or sign out and sign in again so a fresh ID token is issued.
-        (Bundle: \(bundleId))
+        (Bundle: \(bundleId), UID: \(uid))
         """
         return NSError(
             domain: ns.domain,

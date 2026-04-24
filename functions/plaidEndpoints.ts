@@ -1,5 +1,5 @@
 import * as admin from "firebase-admin";
-import { error as logError } from "firebase-functions/logger";
+import { error as logError, info as logInfo } from "firebase-functions/logger";
 import { defineSecret, defineString } from "firebase-functions/params";
 import { HttpsError, onCall, onRequest } from "firebase-functions/v2/https";
 import {
@@ -107,9 +107,19 @@ interface PlaidConnectionDoc {
 }
 
 export const plaidCreateLinkToken = onCall(
-  { region: "us-central1", cors: true, secrets: plaidSecrets },
+  { region: "us-central1", cors: true, invoker: "public", secrets: plaidSecrets },
   async (request) => {
     if (!request.auth?.uid) {
+      const authHeader = request.rawRequest.headers.authorization;
+      const appCheckHeader = request.rawRequest.headers["x-firebase-appcheck"];
+      logInfo("plaidCreateLinkToken unauthenticated", {
+        hasAuth: Boolean(request.auth?.uid),
+        hasAuthorizationHeader: Boolean(authHeader),
+        authHeaderPrefix: typeof authHeader === "string" ? authHeader.split(" ")[0] : null,
+        hasAppCheckHeader: Boolean(appCheckHeader),
+        contentType: request.rawRequest.headers["content-type"] ?? null,
+        userAgent: request.rawRequest.headers["user-agent"] ?? null,
+      });
       throw new HttpsError("unauthenticated", "Sign in required.");
     }
     const env = parseEnv(request.data?.environment);
@@ -132,7 +142,7 @@ export const plaidCreateLinkToken = onCall(
 );
 
 export const plaidExchangePublicToken = onCall(
-  { region: "us-central1", cors: true, secrets: plaidSecrets },
+  { region: "us-central1", cors: true, invoker: "public", secrets: plaidSecrets },
   async (request) => {
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Sign in required.");
@@ -320,7 +330,7 @@ async function syncSingleItem(itemId: string, uid: string): Promise<{ added: num
 }
 
 export const plaidSyncTransactions = onCall(
-  { region: "us-central1", cors: true, secrets: plaidSecrets },
+  { region: "us-central1", cors: true, invoker: "public", secrets: plaidSecrets },
   async (request) => {
     if (!request.auth?.uid) {
       throw new HttpsError("unauthenticated", "Sign in required.");

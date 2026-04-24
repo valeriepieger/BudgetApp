@@ -13,9 +13,11 @@ struct OnboardingBankLinkStep: View {
 
     @State private var linkToken: String = ""
     @State private var showPlaid = false
+    @State private var plaidHandler: Handler?
     @State private var isFetchingToken = false
     @State private var isFinishingLink = false
     @State private var localError: String?
+    @State private var debugInfo: String?
     /// Prevents double-taps scheduling two overlapping callable requests (GTMSessionFetcher "already running").
     @State private var linkLaunchInFlight = false
 
@@ -41,6 +43,13 @@ struct OnboardingBankLinkStep: View {
                             .foregroundStyle(.red)
                     }
 
+                    if let debugInfo {
+                        Text(debugInfo)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .textSelection(.enabled)
+                    }
+
                     securityNote
                         .padding(.top, 4)
 
@@ -53,22 +62,9 @@ struct OnboardingBankLinkStep: View {
 
             bottomNavigation
         }
-        .plaidLink(
-            isPresented: $showPlaid,
-            token: linkToken,
-            onSuccess: { success in
-                Task { await handlePlaidSuccess(publicToken: success.publicToken) }
-            },
-            onExit: { exit in
-                showPlaid = false
-                if let err = exit.error {
-                    localError = String(describing: err)
-                }
-            },
-            onEvent: { _ in },
-            onLoad: {},
-            errorView: AnyView(plaidErrorFallback)
-        )
+        .fullScreenCover(isPresented: $showPlaid) {
+            plaidSheetContent
+        }
     }
 
     // MARK: - Connect
@@ -158,11 +154,27 @@ struct OnboardingBankLinkStep: View {
                 .font(.title2)
             Text("Plaid couldn’t start from this link token.")
                 .multilineTextAlignment(.center)
+            if let debugInfo {
+                Text(debugInfo)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .textSelection(.enabled)
+            }
             Button("Dismiss") {
                 showPlaid = false
             }
         }
         .padding()
+    }
+
+    @ViewBuilder
+    private var plaidSheetContent: some View {
+        if let plaidHandler {
+            plaidHandler.makePlaidLinkSheet()
+        } else {
+            plaidErrorFallback
+        }
     }
 
     // MARK: - Navigation
@@ -198,14 +210,25 @@ struct OnboardingBankLinkStep: View {
     @MainActor
     private func openPlaidLink() async {
         localError = nil
+        debugInfo = nil
         isFetchingToken = true
         defer { isFetchingToken = false }
         do {
             let token = try await PlaidFunctionsClient.createLinkToken(environment: .current)
+            let env = PlaidBackendEnvironment.current.rawValue
+            debugInfo = "Token received: prefix=\(token.prefix(5)) length=\(token.count) env=\(env)"
+            guard token.hasPrefix("link-"), token.count > 24 else {
+                localError = "Received an invalid Plaid link token from backend."
+                return
+            }
             linkToken = token
+            guard configurePlaidHandler(token: token) else {
+                return
+            }
             showPlaid = true
         } catch {
             localError = error.localizedDescription
+            debugInfo = "createLinkToken failed: \(error.localizedDescription)"
         }
     }
 
@@ -225,6 +248,40 @@ struct OnboardingBankLinkStep: View {
             viewModel.registerPlaidLink(itemId: itemId, institution: institution)
         } catch {
             localError = error.localizedDescription
+            debugInfo = "Link success follow-up failed: \(error.localizedDescription)"
+        }
+    }
+
+    @MainActor
+    private func configurePlaidHandler(token: String) -> Bool {
+        var configuration = LinkTokenConfiguration(token: token) { success in
+            Task { await handlePlaidSuccess(publicToken: success.publicToken) }
+        }
+
+        configuration.onExit = { exit in
+            showPlaid = false
+            if let err = exit.error {
+                localError = String(describing: err)
+                debugInfo = "Plaid exit error: \(String(describing: err))"
+            }
+        }
+
+        configuration.onEvent = { event in
+            debugInfo = "Plaid event: \(event.eventName)"
+        }
+
+        let result = Plaid.create(configuration) {
+            debugInfo = (debugInfo ?? "") + " | onLoad"
+        }
+
+        switch result {
+        case .success(let handler):
+            plaidHandler = handler
+            return true
+        case .failure(let error):
+            localError = "Plaid handler creation failed."
+            debugInfo = "Plaid.create error: \(error)"
+            return false
         }
     }
 }
