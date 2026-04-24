@@ -1,9 +1,13 @@
 import Foundation
+import FirebaseAuth
+import FirebaseCore
 import FirebaseFunctions
 
 enum PlaidFunctionsClientError: LocalizedError {
     case invalidResponse
     case missingField(String)
+    case notSignedIntoFirebase
+    case concurrentRequest
 
     var errorDescription: String? {
         switch self {
@@ -11,6 +15,10 @@ enum PlaidFunctionsClientError: LocalizedError {
             return "Unexpected response from the server."
         case .missingField(let name):
             return "Missing field in server response: \(name)"
+        case .notSignedIntoFirebase:
+            return "You are not signed in to Firebase. Try signing out and back in."
+        case .concurrentRequest:
+            return "Another bank request is still in progress. Wait a moment and try again."
         }
     }
 }
@@ -19,7 +27,16 @@ enum PlaidFunctionsClientError: LocalizedError {
 enum PlaidFunctionsClient {
     private static let functions = Functions.functions(region: "us-central1")
 
-    private static func call(_ name: String, _ data: [String: Any]) async throws -> [String: Any] {
+    /// Serialize Plaid calls so we never hit the same HTTPS endpoint concurrently (avoids GTMSessionFetcher "already running").
+    private static let callLock = NSLock()
+    private static var callInFlight = false
+
+    private static func performCall(_ name: String, _ data: [String: Any], forceRefreshToken: Bool) async throws -> [String: Any] {
+        guard let user = Auth.auth().currentUser else {
+            throw PlaidFunctionsClientError.notSignedIntoFirebase
+        }
+        _ = try await user.getIDToken(forcingRefresh: forceRefreshToken)
+
         try await withCheckedThrowingContinuation { continuation in
             functions.httpsCallable(name).call(data) { result, error in
                 if let error {
@@ -33,6 +50,58 @@ enum PlaidFunctionsClient {
                 continuation.resume(returning: dict)
             }
         }
+    }
+
+    private static func call(_ name: String, _ data: [String: Any]) async throws -> [String: Any] {
+        callLock.lock()
+        if callInFlight {
+            callLock.unlock()
+            throw PlaidFunctionsClientError.concurrentRequest
+        }
+        callInFlight = true
+        callLock.unlock()
+        defer {
+            callLock.lock()
+            callInFlight = false
+            callLock.unlock()
+        }
+
+        do {
+            return try await performCall(name, data, forceRefreshToken: false)
+        } catch {
+            if shouldRetryAfterAuthRefresh(error) {
+                return try await performCall(name, data, forceRefreshToken: true)
+            }
+            throw mapFunctionsErrorIfNeeded(error)
+        }
+    }
+
+    private static func shouldRetryAfterAuthRefresh(_ error: Error) -> Bool {
+        let ns = error as NSError
+        guard ns.domain == FunctionsErrorDomain else { return false }
+        return ns.code == FunctionsErrorCode.unauthenticated.rawValue
+    }
+
+    private static func mapFunctionsErrorIfNeeded(_ error: Error) -> Error {
+        let ns = error as NSError
+        guard ns.domain == FunctionsErrorDomain,
+              ns.code == FunctionsErrorCode.unauthenticated.rawValue
+        else { return error }
+
+        let bundleId = Bundle.main.bundleIdentifier ?? "unknown"
+        let firebaseProject = FirebaseApp.app()?.options.projectID ?? "(unknown)"
+        let message = """
+        Cloud Functions rejected your login (UNAUTHENTICATED). Most often:
+        • GoogleService-Info.plist must be from the same Firebase project as your deployed functions (e.g. budgetapp-66eff). This app’s Firebase project id is: \(firebaseProject).
+        • After fixing the plist, delete the app from the device and reinstall.
+        • Or sign out and sign in again so a fresh ID token is issued.
+        (Bundle: \(bundleId))
+        """
+        return NSError(
+            domain: ns.domain,
+            code: ns.code,
+            userInfo: [NSLocalizedDescriptionKey: message]
+        )
     }
 
     static func createLinkToken(environment: PlaidBackendEnvironment = .current) async throws -> String {

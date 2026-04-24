@@ -16,6 +16,8 @@ struct OnboardingBankLinkStep: View {
     @State private var isFetchingToken = false
     @State private var isFinishingLink = false
     @State private var localError: String?
+    /// Prevents double-taps scheduling two overlapping callable requests (GTMSessionFetcher "already running").
+    @State private var linkLaunchInFlight = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -84,7 +86,12 @@ struct OnboardingBankLinkStep: View {
                 .fixedSize(horizontal: false, vertical: true)
 
             Button {
-                Task { await openPlaidLink() }
+                guard !linkLaunchInFlight else { return }
+                linkLaunchInFlight = true
+                Task { @MainActor in
+                    defer { linkLaunchInFlight = false }
+                    await openPlaidLink()
+                }
             } label: {
                 HStack {
                     if isFetchingToken || isFinishingLink {
