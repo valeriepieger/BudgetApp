@@ -19,11 +19,12 @@ final class OnboardingViewModel: ObservableObject {
         case welcome = 0
         case income = 1
         case bankLink = 2
-        case completion = 3
+        case categorySelection = 3
+        case completion = 4
     }
 
     @Published var currentStep: Step = .welcome
-
+    @Published var selectedCategories: Set<TransactionCategory> = []
 
     @Published var incomeSources: [DraftIncome] = []
     @Published var newIncomeName: String = ""
@@ -102,7 +103,7 @@ final class OnboardingViewModel: ObservableObject {
         do {
             let batch = db.batch()
 
-            //write income sources
+            // write income sources
             for source in incomeSources {
                 let ref = userRef.collection("income_sources").document()
                 batch.setData([
@@ -112,14 +113,19 @@ final class OnboardingViewModel: ObservableObject {
                 ], forDocument: ref)
             }
 
-            //write hardcoded categories from TransactionCategory
-            for category in TransactionCategory.allCases {
-                let ref = userRef.collection("categories").document()
+            // write only selected categories using name as document ID
+            for category in selectedCategories {
+                let ref = userRef.collection("categories").document(category.rawValue)
                 batch.setData([
                     "name": category.rawValue,
                     "limit": 0.0
                 ], forDocument: ref)
             }
+
+            // save visibleCategories array to user document
+            batch.setData([
+                "visibleCategories": selectedCategories.map { $0.rawValue }
+            ], forDocument: userRef, merge: true)
 
             try await batch.commit()
             isSaving = false

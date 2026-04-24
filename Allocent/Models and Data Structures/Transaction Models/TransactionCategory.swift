@@ -17,6 +17,8 @@ enum TransactionCategory: String, Codable, CaseIterable {
     case entertainment = "Entertainment"
     case health = "Health"
     case utilities = "Utilities"
+    case rent = "Rent"
+    case insurance = "Insurance"
     case other = "Other"
 
     var emoji: String {
@@ -28,6 +30,8 @@ enum TransactionCategory: String, Codable, CaseIterable {
         case .entertainment: return "🎬"
         case .health: return "💊"
         case .utilities: return "💡"
+        case .rent: return "🏠"
+        case .insurance: return "🛡️"
         case .other: return "📦"
         }
     }
@@ -41,11 +45,41 @@ enum TransactionCategory: String, Codable, CaseIterable {
         case .entertainment: return "purple"
         case .health: return "red"
         case .utilities: return "yellow"
+        case .rent: return "teal"
+        case .insurance: return "indigo"
         case .other: return "gray"
         }
     }
-}
+    
+    var keywords: [String] {
+        switch self {
+        case .food: return ["food", "dining", "restaurant", "eat", "drink", "coffee", "lunch", "dinner"]
+        case .transport: return ["transport", "travel", "car", "gas", "uber", "lyft", "transit", "fuel"]
+        case .groceries: return ["grocer", "market", "supermarket", "food", "costco", "walmart", "target"]
+        case .shopping: return ["shop", "retail", "clothes", "amazon", "store"]
+        case .entertainment: return ["entertainment", "fun", "movie", "music", "game", "sport", "streaming"]
+        case .health: return ["health", "medical", "pharmacy", "doctor", "gym", "fitness", "wellness"]
+        case .utilities: return ["utilities", "bill", "electric", "water", "internet", "phone"]
+        case .rent: return ["rent", "lease", "landlord", "apartment", "housing"]
+        case .insurance: return ["insurance", "premium", "coverage", "policy"]
+        case .other: return []
+        }
+    }
 
+    func bestMatch(in budgetCategories: [BudgetCategory]) -> BudgetCategory? {
+        let selfName = rawValue.lowercased()
+        if let exact = budgetCategories.first(where: {
+            $0.name.lowercased() == selfName ||
+            $0.name.lowercased().contains(selfName) ||
+            selfName.contains($0.name.lowercased())
+        }) {
+            return exact
+        }
+        return budgetCategories.first { cat in
+            keywords.contains(where: { cat.name.lowercased().contains($0) })
+        }
+    }
+}
 struct Transaction: Identifiable {
     var id: String
     var merchant: String

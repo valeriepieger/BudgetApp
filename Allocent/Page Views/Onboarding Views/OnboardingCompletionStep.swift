@@ -99,7 +99,7 @@ struct OnboardingCompletionStep: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
 
-                ForEach(TransactionCategory.allCases, id: \.self) { category in
+                ForEach(Array(viewModel.selectedCategories).sorted { $0.rawValue < $1.rawValue }, id: \.self) { category in
                     HStack(spacing: 8) {
                         Text(category.emoji)
                         Text(category.rawValue)

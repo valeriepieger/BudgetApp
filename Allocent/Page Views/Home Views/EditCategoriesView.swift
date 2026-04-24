@@ -198,68 +198,78 @@ private struct EditCategoryRow: View {
 private struct AddCategorySheet: View {
     @ObservedObject var viewModel: EditCategoriesViewModel
     @Binding var isPresented: Bool
-    @State private var name = ""
-    @State private var limitText = ""
+    @State private var selected: TransactionCategory? = nil
     @State private var isSaving = false
-    
-    private var limit: Double {
-        Double(limitText) ?? 0
+
+    private var availableCategories: [TransactionCategory] {
+        let existingNames = Set(viewModel.categories.map { $0.name })
+        return TransactionCategory.allCases.filter { !existingNames.contains($0.rawValue) }
     }
-    
-    private var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespaces).isEmpty && limit >= 0
-    }
-    
+
     var body: some View {
         NavigationStack {
             ZStack {
                 Color("Background").ignoresSafeArea()
-                VStack(spacing: 20) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Category name")
+
+                if availableCategories.isEmpty {
+                    VStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 48))
+                            .foregroundColor(Color("OliveGreen"))
+                        Text("All categories added")
+                            .font(.headline)
+                        Text("You've added all available categories.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        TextField("e.g. Food, Bills", text: $name)
-                            .textFieldStyle(.roundedBorder)
-                            .autocapitalization(.words)
+                            .multilineTextAlignment(.center)
                     }
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Monthly limit ($)")
+                    .padding()
+                } else {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text("Select a category to add")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                        TextField("0.00", text: $limitText)
-                            .keyboardType(.decimalPad)
-                            .textFieldStyle(.roundedBorder)
+                            .padding(.horizontal)
+                            .padding(.top, 8)
+
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 110))], spacing: 10) {
+                            ForEach(availableCategories, id: \.self) { category in
+                                CategoryChip(
+                                    category: category,
+                                    isSelected: selected == category
+                                ) {
+                                    selected = category
+                                }
+                            }
+                        }
+                        .padding(.horizontal)
+
+                        Spacer()
                     }
-                    
-                    Spacer()
                 }
-                .padding()
             }
             .navigationTitle("Add Category")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        isPresented = false
-                    }
+                    Button("Cancel") { isPresented = false }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
+                    Button("Add") {
                         save()
                     }
-                    .disabled(!isValid || isSaving)
+                    .disabled(selected == nil || isSaving)
+                    .bold()
                 }
             }
         }
     }
-    
+
     private func save() {
-        guard isValid else { return }
+        guard let category = selected else { return }
         isSaving = true
         Task {
-            await viewModel.addCategory(name: name.trimmingCharacters(in: .whitespaces), limit: limit)
+            await viewModel.addCategory(name: category.rawValue, limit: 0.0)
             await MainActor.run {
                 isSaving = false
                 isPresented = false
