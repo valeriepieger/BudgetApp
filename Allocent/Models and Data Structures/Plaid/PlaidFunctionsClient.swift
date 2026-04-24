@@ -37,7 +37,7 @@ enum PlaidFunctionsClient {
         }
         _ = try await user.getIDToken(forcingRefresh: forceRefreshToken)
 
-        try await withCheckedThrowingContinuation { continuation in
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[String: Any], Error>) in
             functions.httpsCallable(name).call(data) { result, error in
                 if let error {
                     continuation.resume(throwing: error)
