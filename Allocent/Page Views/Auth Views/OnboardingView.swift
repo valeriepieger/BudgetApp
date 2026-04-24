@@ -33,10 +33,10 @@ struct OnboardingView: View {
                         welcomeStep
                     case .income:
                         OnboardingIncomeStep()
-                    case .bankLink:
-                        OnboardingBankLinkStep()
                     case .budgetCategories:
                         OnboardingBudgetStep()
+                    case .bankLink:
+                        OnboardingBankLinkStep()
                     case .completion:
                         OnboardingCompletionStep(user: user)
                     }
@@ -76,14 +76,14 @@ struct OnboardingView: View {
                         subtitle: "Tell us how much you earn each month"
                     )
                     OnboardingBullet(
-                        icon: "building.columns.fill",
-                        title: "Link your bank",
-                        subtitle: "Optionally connect accounts to track spending"
-                    )
-                    OnboardingBullet(
                         icon: "chart.pie.fill",
                         title: "Set category limits",
                         subtitle: "Allocate your income across spending categories"
+                    )
+                    OnboardingBullet(
+                        icon: "building.columns.fill",
+                        title: "Link your bank",
+                        subtitle: "Optionally connect Plaid to import this month’s spending"
                     )
                 }
             }
