@@ -95,7 +95,7 @@ struct OnboardingCompletionStep: View {
                         .font(.headline)
                 }
 
-                ForEach(TransactionCategory.allCases, id: \.self) { category in
+                ForEach(Array(viewModel.selectedCategories).sorted { $0.rawValue < $1.rawValue }, id: \.self) { category in
                     HStack(spacing: 8) {
                         Image(systemName: category.iconName)
                             .foregroundStyle(Color("OliveGreen"))
