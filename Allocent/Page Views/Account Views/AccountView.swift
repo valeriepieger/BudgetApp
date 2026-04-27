@@ -48,27 +48,32 @@ struct AccountView: View {
                 //Name and email
 
                 HStack(spacing: 16) {
-                   if let urlString = currentUser?.profileImageURL,
-                              let url = URL(string: urlString) {
-                        AsyncImage(url: url) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(width: 60, height: 60)
-                                    .clipShape(Circle())
-                            default:
-                                Circle()
-                                    .fill(Color("OliveGreen").opacity(0.3))
-                                    .frame(width: 60, height: 60)
-                                    .overlay(
-                                        Image(systemName: "person")
-                                            .foregroundStyle(Color("OliveGreen"))
-                                            .font(.system(size: 24, weight: .bold))
-                                    )
+                    //Profile pic
+                    if let urlString = currentUser?.profileImageURL,
+                         let url = URL(string: urlString) {
+                            AsyncImage(url: url) { phase in
+                                if let image = phase.image {
+                                    image
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 60, height: 60)
+                                        .clipShape(Circle())
+                                } else if phase.error != nil {
+                                    //Failed to load
+                                    Circle()
+                                        .fill(Color("OliveGreen").opacity(0.3))
+                                        .frame(width: 60, height: 60)
+                                        .overlay(
+                                            Image(systemName: "person")
+                                                .foregroundStyle(Color("OliveGreen"))
+                                                .font(.system(size: 24, weight: .bold))
+                                        )
+                                } else {
+                                    //Loading state! Show a spinner so you know it's fetching
+                                    ProgressView()
+                                        .frame(width: 60, height: 60)
+                                }
                             }
-                        }
                     } else {
                         Circle()
                             .fill(Color("OliveGreen").opacity(0.3))
@@ -238,7 +243,7 @@ struct AccountView: View {
                         pushNotifications = false
                     }
                 } else if status == .denied {
-                    // Permission was previously denied — open Settings
+                    //Permission was previously denied. open Settings
                     pushNotifications = false
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         await UIApplication.shared.open(url)

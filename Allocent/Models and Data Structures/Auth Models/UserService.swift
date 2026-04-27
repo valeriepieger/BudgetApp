@@ -89,12 +89,14 @@ final class UserService {
     }
 
     func uploadProfileImage(uid: String, imageData: Data) async throws -> String {
-        let ref = storage.reference().child("profile_images/\(uid).jpg")
+        //make a new unique ID for the picture because if just overwriting, will not update on account page even w/ async
+        let uniqueID = UUID().uuidString
+        let ref = storage.reference().child("profile_images/\(uid)_\(uniqueID).jpg")
         let metadata = StorageMetadata()
         metadata.contentType = "image/jpeg"
         _ = try await ref.putData(imageData, metadata: metadata)
 
-        // Retry downloadURL — Storage may need a moment to index the new file
+        //retry downloadURL
         var lastError: Error?
         for attempt in 0..<3 {
             do {

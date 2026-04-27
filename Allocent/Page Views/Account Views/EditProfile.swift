@@ -190,6 +190,8 @@ struct EditProfile: View {
                     uid: user.id,
                     imageData: compressed
                 )
+                //wipe cache so async needs to fetch new image uploaded
+                URLCache.shared.removeAllCachedResponses()
             }
             
             // Update Firestore profile
@@ -200,7 +202,7 @@ struct EditProfile: View {
                 email: displayEmail,
                 phoneNumber: user.phoneNumber,
                 bio: user.bio,
-                profileImageURL: imageURL
+                profileImageURL: imageURL ?? user.profileImageURL,
             )
             
             // Update email in Firebase Auth if changed
@@ -213,7 +215,11 @@ struct EditProfile: View {
             // Refresh session state with updated user data
             await session.refreshUser()
             
-            dismiss()
+            await MainActor.run {
+                DispatchQueue.main.async {
+                    dismiss()
+                }
+            }
         } catch {
             errorMessage = error.localizedDescription
             showError = true

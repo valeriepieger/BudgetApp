@@ -174,9 +174,12 @@ final class SessionViewModel: ObservableObject {
 
     // Refreshes the current user data from Firestore
     func refreshUser() async {
+        
         guard let uid = auth.currentUID() else { return }
         do {
             let user = try await users.fetchUser(uid: uid)
+            print("REFRESH USER CALLED")
+            print("NEW IMAGE URL:", user.profileImageURL ?? "nil")
             if user.needsOnboarding {
                 state = .onboarding(user)
             } else {
